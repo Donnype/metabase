@@ -14,6 +14,7 @@ import {
   jwtDefaultRefreshTokenFunction,
   validateSession,
 } from "embedding/auth-common";
+
 import * as MetabaseError from "embedding-sdk-shared/errors";
 import type { SdkAuthState } from "embedding-sdk-shared/types/auth-state";
 
