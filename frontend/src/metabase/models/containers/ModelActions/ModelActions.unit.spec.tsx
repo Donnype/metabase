@@ -56,7 +56,6 @@ import {
 
 import ModelActions from "./ModelActions";
 
-// eslint-disable-next-line react/display-name
 jest.mock("metabase/actions/containers/ActionCreator", () => () => (
   <div data-testid="mock-action-editor" />
 ));
