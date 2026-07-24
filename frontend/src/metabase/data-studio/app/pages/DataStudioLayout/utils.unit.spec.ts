@@ -13,6 +13,8 @@ describe("getCurrentTab", () => {
     ${"/data-studio/library"}                     | ${"library"}
     ${"/data-studio/library/collections/123"}     | ${"library"}
     ${"/data-studio/library/metrics/456"}         | ${"library"}
+    ${"/data-studio/cleanup"}                     | ${"cleanup"}
+    ${"/data-studio/cleanup/tables/42"}           | ${"cleanup"}
     ${"/data-studio/transforms/runs"}             | ${"runs"}
     ${"/data-studio/transforms/runs?page=2"}      | ${"runs"}
     ${"/data-studio/transforms"}                  | ${"transforms"}

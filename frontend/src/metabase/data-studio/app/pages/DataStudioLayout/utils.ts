@@ -3,6 +3,7 @@ import * as Urls from "metabase/urls";
 type TabName =
   | "data"
   | "library"
+  | "cleanup"
   | "transforms"
   | "jobs"
   | "runs"
@@ -26,6 +27,8 @@ export const getCurrentTab = (pathname: string): TabName => {
       return "schema-viewer";
     case pathname.startsWith(Urls.dataStudioLibrary()):
       return "library";
+    case pathname.startsWith(Urls.dataStudioCleanup()):
+      return "cleanup";
     case pathname.startsWith(Urls.transformGraphRunList()):
       return "runs";
     case pathname.startsWith(Urls.transformList()):

@@ -2,16 +2,19 @@ import { useState } from "react";
 import { t } from "ttag";
 
 import DataStudioLogo from "assets/img/data-studio-logo.svg";
+import { trackDataStudioCleanupOpened } from "metabase/common/data-studio/analytics";
 import { useHasTokenFeature } from "metabase/common/hooks";
 import { useUserKeyValue } from "metabase/common/hooks/use-user-key-value";
 import { useDataStudioSettings } from "metabase/data-studio/settings/hooks";
 import { AreaLayout, AreaTab } from "metabase/nav/components/AreaLayout";
 import {
   PLUGIN_FEATURE_LEVEL_PERMISSIONS,
+  PLUGIN_LIBRARY,
   PLUGIN_REMOTE_SYNC,
 } from "metabase/plugins";
 import { useSelector } from "metabase/redux";
 import { Outlet, useLocation } from "metabase/router";
+import { getUserIsAdmin } from "metabase/selectors/user";
 import { useSetting } from "metabase/settings";
 import { canAccessTransforms as canAccessTransformsSelector } from "metabase/transforms/selectors";
 import * as Urls from "metabase/urls";
@@ -34,6 +37,7 @@ export function DataStudioLayout() {
     PLUGIN_FEATURE_LEVEL_PERMISSIONS.canAccessDataModel,
   );
   const canAccessTransforms = useSelector(canAccessTransformsSelector);
+  const isAdmin = useSelector(getUserIsAdmin);
   const hasDirtyChanges = PLUGIN_REMOTE_SYNC.useHasLibraryDirtyChanges();
   const hasTransformDirtyChanges =
     PLUGIN_REMOTE_SYNC.useHasTransformDirtyChanges();
@@ -70,6 +74,16 @@ export function DataStudioLayout() {
           ) : null
         }
       />
+      {isAdmin && hasLibraryFeature && PLUGIN_LIBRARY.isEnabled && (
+        <AreaTab
+          label={t`Cleanup`}
+          icon="search_check"
+          to={Urls.dataStudioCleanup()}
+          isSelected={currentTab === "cleanup"}
+          showLabel={isNavbarOpened}
+          onClick={trackDataStudioCleanupOpened}
+        />
+      )}
       {canAccessDataModel && (
         <AreaTab
           label={t`Tables`}
