@@ -11,23 +11,17 @@ import type {
   MetabotGenerateContentResponse,
   MetabotId,
   MetabotInfo,
-  MetabotProvider,
-  MetabotSettingsResponse,
   MetabotSlackSettings,
   MetabotSourceFeedback,
   RegenerateSuggestedMetabotPromptsResponse,
   SaveMetabotEntityRequest,
   SuggestedMetabotPromptsRequest,
   SuggestedMetabotPromptsResponse,
-  UpdateMetabotSettingsRequest,
   UserMetabotPermissionsResponse,
 } from "metabase-types/api";
 
 import { Api } from "./api";
 import { idTag, invalidateTags, listTag } from "./tags";
-
-const touchesCredentials = (body: UpdateMetabotSettingsRequest) =>
-  "credentials" in body || "api-key" in body;
 
 export const metabotApi = Api.injectEndpoints({
   endpoints: (builder) => ({
@@ -66,34 +60,6 @@ export const metabotApi = Api.injectEndpoints({
         method: "GET",
         url: `/api/metabot/conversations/${conversationId}`,
       }),
-    }),
-    getMetabotSettings: builder.query<
-      MetabotSettingsResponse,
-      { provider: MetabotProvider }
-    >({
-      query: ({ provider }) => ({
-        method: "GET",
-        url: "/api/metabot/settings",
-        params: { provider },
-      }),
-      providesTags: () => [listTag("llm-models")],
-    }),
-    updateMetabotSettings: builder.mutation<
-      MetabotSettingsResponse,
-      UpdateMetabotSettingsRequest
-    >({
-      query: (body) => ({
-        method: "PUT",
-        url: "/api/metabot/settings",
-        body,
-      }),
-      invalidatesTags: (_, error, body) =>
-        invalidateTags(error, [
-          "session-properties",
-          // A credential write can change which models the provider serves, e.g. a different Bedrock
-          // region, Google location, or Azure resource.
-          ...(touchesCredentials(body) ? [listTag("llm-models")] : []),
-        ]),
     }),
     updateMetabot: builder.mutation<
       MetabotInfo,
@@ -219,11 +185,9 @@ export const metabotApi = Api.injectEndpoints({
 });
 
 export const {
-  useGetMetabotSettingsQuery,
   useGetMetabotConversationQuery,
   useListMetabotConversationsQuery,
   useListMetabotsQuery,
-  useUpdateMetabotSettingsMutation,
   useUpdateMetabotMutation,
   useGetSuggestedMetabotPromptsQuery,
   useDeleteSuggestedMetabotPromptMutation,
