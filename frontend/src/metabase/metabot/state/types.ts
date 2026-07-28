@@ -154,32 +154,37 @@ export type MetabotReactionsState = {
   suggestedTransforms: MetabotSuggestedTransform[];
 };
 
-export interface MetabotConverstationState {
+export interface MetabotConversationState {
   conversationId: string;
-  loadId: string;
   title: string | undefined;
   isProcessing: boolean;
+  hasMessagedInSession: boolean;
   messages: MetabotChatMessage[];
-  visible: boolean;
   state: MetabotStateContext;
   stateBeforeTurn?: MetabotStateContext;
   activeToolCalls: MetabotToolCall[];
   activeChainId: string | undefined;
-  profileOverride: MetabotProfileId | undefined;
   pendingMessageExternalId: string | undefined;
+  profileOverride: MetabotProfileId | undefined;
   experimental: {
     developerMessage: string;
     metabotReqIdOverride: string | undefined;
   };
 }
 
-export const fixedMetabotAgentIds = ["omnibot", "sql", "ask"] as const;
+export interface MetabotAgentState {
+  conversationId: string;
+  visible: boolean;
+}
+
+export const fixedMetabotAgentIds = ["omnibot", "sql"] as const;
 type FixedMetabotAgentId = (typeof fixedMetabotAgentIds)[number];
 
 export type MetabotAgentId = FixedMetabotAgentId | `test_${number}`;
 
 export interface MetabotState {
-  conversations: Record<MetabotAgentId, MetabotConverstationState | undefined>;
+  conversations: Record<string, MetabotConversationState | undefined>;
+  agents: Partial<Record<MetabotAgentId, MetabotAgentState>>;
   reactions: MetabotReactionsState;
   titlePollingConversationIds: string[];
   debugMode: boolean;

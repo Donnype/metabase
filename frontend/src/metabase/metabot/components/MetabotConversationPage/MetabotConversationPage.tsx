@@ -6,10 +6,11 @@ import { useGetMetabotConversationQuery } from "metabase/api/metabot";
 import { GenericError } from "metabase/common/components/ErrorPages";
 import { MetabotAsk } from "metabase/metabot/components/MetabotAsk";
 import {
-  useMetabotAgent,
+  useMetabotPageConversation,
   useUserMetabotPermissions,
 } from "metabase/metabot/hooks";
 import {
+  getIsConversationEmpty,
   getIsConversationInProgress,
   setConversationSnapshot,
 } from "metabase/metabot/state";
@@ -26,17 +27,18 @@ export const MetabotConversationPage = () => {
   const { convoId: urlConvoId } = useParams<{ convoId: string }>();
   const dispatch = useDispatch();
   const { canUseMetabot, isLoading } = useUserMetabotPermissions();
-  const { conversationId } = useMetabotAgent("ask");
+  const conversationId = useMetabotPageConversation(urlConvoId);
 
   const isSettingsLoading = useSelector(getSettingsLoading);
   const isInProgress = useSelector((state) =>
-    getIsConversationInProgress(state, "ask"),
+    conversationId ? getIsConversationInProgress(state, conversationId) : false,
+  );
+  const isEmpty = useSelector((state) =>
+    conversationId ? getIsConversationEmpty(state, conversationId) : true,
   );
 
-  const isConvoLoaded = conversationId === urlConvoId;
-
   const { currentData: conversation, isError } = useGetMetabotConversationQuery(
-    !urlConvoId || !canUseMetabot || (isConvoLoaded && !isInProgress)
+    !urlConvoId || !canUseMetabot || (!isEmpty && !isInProgress)
       ? skipToken
       : urlConvoId,
     {
@@ -52,7 +54,6 @@ export const MetabotConversationPage = () => {
 
       dispatch(
         setConversationSnapshot({
-          agentId: "ask",
           conversationId: conversation.conversation_id,
           title: conversation.title ?? undefined,
           messages: normalizeFetchedChatMessages(conversation.messages),
@@ -68,7 +69,7 @@ export const MetabotConversationPage = () => {
     return <ConversationLoader />;
   }
 
-  if (!canUseMetabot) {
+  if (!canUseMetabot || !urlConvoId) {
     return <Navigate to={Urls.newQuestion({ mode: "ask" })} replace />;
   }
 
@@ -76,11 +77,11 @@ export const MetabotConversationPage = () => {
     return <ConversationLoadError />;
   }
 
-  if (!isConvoLoaded) {
+  if (!conversationId || isEmpty) {
     return <ConversationLoader />;
   }
 
-  return <MetabotAsk />;
+  return <MetabotAsk conversationId={conversationId} />;
 };
 
 const ConversationLoader = () => (

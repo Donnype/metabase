@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 
-import type { MetabotConfig } from "metabase/metabot/components/Metabot";
 import { MetabotChat } from "metabase/metabot/components/MetabotChat";
 import { MetabotConversationHistory } from "metabase/metabot/components/MetabotChat/MetabotConversationHistory";
 import {
   useIsAskPage,
   useMetabotAgent,
+  useMetabotConversation,
   useUserMetabotPermissions,
 } from "metabase/metabot/hooks";
 import { useDispatch } from "metabase/redux";
@@ -13,6 +13,8 @@ import type { SuggestionModel } from "metabase/rich_text_editing/tiptap/extensio
 import { push, replace } from "metabase/router";
 import { Box, Flex } from "metabase/ui";
 import * as Urls from "metabase/urls";
+
+import { isHistoryEnabledProfile } from "../../constants";
 
 import S from "./MetabotAsk.module.css";
 import { MetabotGreeting } from "./MetabotGreeting";
@@ -26,16 +28,11 @@ const SUGGESTION_MODELS: SuggestionModel[] = [
   "dashboard",
 ];
 
-const askConfig: MetabotConfig = {
-  agentId: "ask",
-  suggestionModels: SUGGESTION_MODELS,
-};
-
-export const MetabotAsk = () => {
+export const MetabotAsk = ({ conversationId }: { conversationId: string }) => {
   const dispatch = useDispatch();
   const { setVisible: setSidebarVisible } = useMetabotAgent("omnibot");
-  const askAgent = useMetabotAgent("ask");
-  const { messages, isDoingScience, conversationId } = askAgent;
+  const { messages, isDoingScience, profile } =
+    useMetabotConversation(conversationId);
   const { isConfigured } = useUserMetabotPermissions();
   const isAskPage = useIsAskPage();
 
@@ -57,15 +54,16 @@ export const MetabotAsk = () => {
 
   const showGreeting = messages.length === 0 && !isDoingScience;
 
-  const historyAction = isConfigured ? (
-    <MetabotConversationHistory
-      profileId={askAgent.profile}
-      activeConversationId={conversationId}
-      onConversationSelect={(id) =>
-        dispatch(push(Urls.metabotConversation(id)))
-      }
-    />
-  ) : undefined;
+  const historyAction =
+    isConfigured && isHistoryEnabledProfile(profile) ? (
+      <MetabotConversationHistory
+        profileId={profile}
+        activeConversationId={conversationId}
+        onConversationSelect={(id) =>
+          dispatch(push(Urls.metabotConversation(id)))
+        }
+      />
+    ) : undefined;
 
   return (
     <Flex direction="column" h="100%" w="100%" bg="background_page-primary">
@@ -76,13 +74,17 @@ export const MetabotAsk = () => {
               {historyAction}
             </Flex>
           )}
-          <MetabotGreeting agentId="ask" suggestionModels={SUGGESTION_MODELS} />
+          <MetabotGreeting
+            conversationId={conversationId}
+            suggestionModels={SUGGESTION_MODELS}
+          />
         </>
       ) : (
         <Box pos="relative" h="100%" w="100%">
           <Box className={S.topFade} />
           <MetabotChat
-            config={askConfig}
+            conversationId={conversationId}
+            config={{ suggestionModels: SUGGESTION_MODELS }}
             className={S.chat}
             headerActions={historyAction}
           />

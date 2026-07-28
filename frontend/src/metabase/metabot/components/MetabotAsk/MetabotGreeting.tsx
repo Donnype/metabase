@@ -20,8 +20,7 @@ import {
   UnstyledButton,
 } from "metabase/ui";
 
-import { useMetabotAgent, useUserMetabotPermissions } from "../../hooks";
-import type { MetabotAgentId } from "../../state";
+import { useMetabotConversation, useUserMetabotPermissions } from "../../hooks";
 
 import S from "./MetabotGreeting.module.css";
 
@@ -36,12 +35,12 @@ const getTitleText = () => {
 };
 
 interface MetabotGreetingProps {
-  agentId: MetabotAgentId;
+  conversationId: string;
   suggestionModels: SuggestionModel[];
 }
 
 export const MetabotGreeting = ({
-  agentId,
+  conversationId,
   suggestionModels,
 }: MetabotGreetingProps) => {
   const [title] = useState(getTitleText);
@@ -52,7 +51,7 @@ export const MetabotGreeting = ({
       open: openAiProviderConfigurationModal,
     },
   ] = useDisclosure(false);
-  const metabot = useMetabotAgent(agentId);
+  const metabot = useMetabotConversation(conversationId);
   const showIllustrations = useSetting("metabot-show-illustrations");
   const { isConfigured } = useUserMetabotPermissions();
 

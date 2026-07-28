@@ -40,7 +40,7 @@ function setup() {
 
   const metabotState = assocIn(
     getMetabotInitialState(),
-    ["conversations", "omnibot", "visible"],
+    ["agents", "omnibot", "visible"],
     true,
   );
 

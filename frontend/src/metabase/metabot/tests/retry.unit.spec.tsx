@@ -18,6 +18,7 @@ import {
   mockAgentEndpoint,
   setup,
   stopResponseButton,
+  testConversationId,
   whoIsYourFavoriteResponse,
 } from "./utils";
 
@@ -138,7 +139,7 @@ describe("metabot > retry", () => {
   it("should rewind convo state to before the retried turn", async () => {
     const { store } = setup();
     const getConvoReqState = () =>
-      getMetabotRequestState(store.getState(), "omnibot");
+      getMetabotRequestState(store.getState(), testConversationId("omnibot"));
 
     mockAgentEndpoint({
       events: [

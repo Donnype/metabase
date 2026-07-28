@@ -1,6 +1,6 @@
 import userEvent from "@testing-library/user-event";
 import fetchMock from "fetch-mock";
-import { assocIn } from "icepick";
+import { assocIn, dissoc } from "icepick";
 
 import { setupEnterprisePlugins } from "__support__/enterprise";
 import {
@@ -29,6 +29,7 @@ import {
 import type { State } from "metabase/redux/store";
 import { createMockState } from "metabase/redux/store/mocks";
 import { Route } from "metabase/router";
+import { checkNotNull } from "metabase/utils/types";
 import type {
   MetabotConversation,
   MetabotInfo,
@@ -46,12 +47,54 @@ import { MetabotProvider } from "../context";
 import {
   type MetabotAgentId,
   type MetabotState,
+  fixedMetabotAgentIds,
   metabotReducer,
   setVisible,
 } from "../state";
 import { getMetabotInitialState } from "../state/reducer-utils";
 
 export { createMockReadableStream, createMockSSEStream, createPauses };
+
+type MetabotStoreLike = { getState: () => { metabot: MetabotState } };
+
+const agentIn = (state: MetabotState, agentId: MetabotAgentId) =>
+  checkNotNull(state.agents[agentId]);
+
+const convoIn = (state: MetabotState, conversationId: string) =>
+  checkNotNull(state.conversations[conversationId]);
+
+export const conversationIdForAgent = (
+  store: MetabotStoreLike,
+  agentId: MetabotAgentId = "omnibot",
+) => agentIn(store.getState().metabot, agentId).conversationId;
+
+export const convoForAgent = (
+  store: MetabotStoreLike,
+  agentId: MetabotAgentId = "omnibot",
+) => convoIn(store.getState().metabot, conversationIdForAgent(store, agentId));
+
+// make ids easer to address than production's random uuids
+export const testConversationId = (agentId: MetabotAgentId) =>
+  `convo-${agentId}`;
+
+export const createTestMetabotState = (): MetabotState =>
+  fixedMetabotAgentIds.reduce((state, agentId) => {
+    const previousId = agentIn(state, agentId).conversationId;
+    const conversationId = testConversationId(agentId);
+
+    return {
+      ...state,
+      conversations: {
+        ...dissoc(state.conversations, previousId),
+        [conversationId]: { ...convoIn(state, previousId), conversationId },
+      },
+      agents: assocIn(
+        state.agents,
+        [agentId, "conversationId"],
+        conversationId,
+      ),
+    };
+  }, getMetabotInitialState());
 
 const mockReducedMotion = () => {
   window.matchMedia = (query: string) =>
@@ -275,17 +318,17 @@ export function setup(
   } = options || {};
 
   const visibleState = assocIn(
-    getMetabotInitialState(),
-    ["conversations", "omnibot", "visible"],
+    createTestMetabotState(),
+    ["agents", "omnibot", "visible"],
     true,
   );
   const metabotState =
     metabotInitialState ??
     Object.keys(visibleState.conversations).reduce(
-      (state, agentId) =>
+      (state, conversationId) =>
         assocIn(
           state,
-          ["conversations", agentId, "title"],
+          ["conversations", conversationId, "title"],
           conversationTitle || undefined,
         ),
       visibleState,

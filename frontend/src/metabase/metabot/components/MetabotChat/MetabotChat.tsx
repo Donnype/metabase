@@ -8,23 +8,22 @@ import { useGetSuggestedMetabotPromptsQuery } from "metabase/api";
 import { useSetting } from "metabase/common/hooks";
 import { AIProviderConfigurationModal } from "metabase/metabot/components/AIProviderConfigurationModal";
 import { AIProviderConfigurationNotice } from "metabase/metabot/components/AIProviderConfigurationNotice";
-import { MetabotResetLongChatButton } from "metabase/metabot/components/MetabotChat/MetabotResetLongChatButton";
+import { MetabotLongChatNotice } from "metabase/metabot/components/MetabotChat/MetabotLongChatNotice";
 import { Box, Button, Flex, Paper, Stack, Text } from "metabase/ui";
 
 import {
-  useMetabotAgent,
+  useMetabotConversation,
   useMetabotName,
   useUserMetabotPermissions,
 } from "../../hooks";
-import type { MetabotConfig } from "../Metabot";
+import type { MetabotChatConfig } from "../Metabot";
 
 import Styles from "./MetabotChat.module.css";
 import { MetabotChatEditor } from "./MetabotChatEditor";
 import { Messages } from "./MetabotChatMessage";
 import { useScrollManager } from "./hooks";
 
-const defaultConfig: MetabotConfig = {
-  agentId: "omnibot",
+const defaultConfig: MetabotChatConfig = {
   suggestionModels: [
     "dataset",
     "metric",
@@ -36,11 +35,15 @@ const defaultConfig: MetabotConfig = {
 };
 
 export const MetabotChat = ({
+  conversationId,
+  onNewConversation,
   config = defaultConfig,
   className,
   headerActions,
 }: {
-  config?: MetabotConfig;
+  conversationId: string;
+  onNewConversation?: () => void;
+  config?: MetabotChatConfig;
   className?: string;
   headerActions?: ReactNode;
 }) => {
@@ -51,7 +54,7 @@ export const MetabotChat = ({
       open: openAiProviderConfigurationModal,
     },
   ] = useDisclosure(false);
-  const metabot = useMetabotAgent(config.agentId);
+  const metabot = useMetabotConversation(conversationId);
   const metabotName = useMetabotName();
   const { isConfigured } = useUserMetabotPermissions();
   const showIllustrations = useSetting("metabot-show-illustrations");
@@ -178,7 +181,7 @@ export const MetabotChat = ({
                 }
                 onRefreshConversation={() => {
                   metabot.setPrompt("");
-                  metabot.loadConversation(metabot.conversationId);
+                  metabot.reloadConversation();
                 }}
                 isDoingScience={metabot.isDoingScience}
                 debug={metabot.debugMode}
@@ -187,10 +190,8 @@ export const MetabotChat = ({
               {/* filler - height gets set via ref mutation */}
               <div ref={fillerRef} data-testid="metabot-message-filler" />
               {/* long convo warning */}
-              {metabot.isLongConversation && (
-                <MetabotResetLongChatButton
-                  onResetConversation={metabot.createNewConversation}
-                />
+              {metabot.isLongConversation && onNewConversation && (
+                <MetabotLongChatNotice onNewConversation={onNewConversation} />
               )}
             </Box>
           )}

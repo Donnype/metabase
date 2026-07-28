@@ -13,10 +13,7 @@ import { UndoListing } from "metabase/common/components/UndoListing";
 import { LONG_CONVO_MSG_LENGTH_THRESHOLD } from "metabase/metabot/constants";
 import { useMetabotAgent } from "metabase/metabot/hooks";
 import { metabotActions } from "metabase/metabot/state";
-import {
-  createConversation,
-  getMetabotInitialState,
-} from "metabase/metabot/state/reducer-utils";
+import { getMetabotInitialState } from "metabase/metabot/state/reducer-utils";
 import { logout } from "metabase/redux/auth";
 import * as domModule from "metabase/utils/dom";
 import {
@@ -45,6 +42,7 @@ import {
   queryConversationTitle,
   setup,
   showMetabot,
+  testConversationId,
   whoIsYourFavoriteResponse,
 } from "./utils";
 
@@ -56,7 +54,12 @@ describe("metabot > ui", () => {
 
   it("does not render header actions unless they are provided", async () => {
     setup({
-      ui: <MetabotChat config={{ agentId: "ask", suggestionModels: [] }} />,
+      ui: (
+        <MetabotChat
+          conversationId={testConversationId("omnibot")}
+          config={{ suggestionModels: [] }}
+        />
+      ),
     });
 
     expect(await screen.findByTestId("metabot-chat-input")).toBeInTheDocument();
@@ -214,7 +217,7 @@ describe("metabot > ui", () => {
 
     store.dispatch(
       metabotActions.addUserMessage({
-        agentId: "omnibot",
+        conversationId: testConversationId("omnibot"),
         id: "user-1",
         type: "text",
         message: "first line\nsecond line",
@@ -239,7 +242,7 @@ describe("metabot > ui", () => {
 
     store.dispatch(
       metabotActions.addUserMessage({
-        agentId: "omnibot",
+        conversationId: testConversationId("omnibot"),
         id: "user-2",
         type: "text",
         message: "first line\n\nsecond line",
@@ -269,7 +272,7 @@ describe("metabot > ui", () => {
           id: "1",
           type: "text",
           message: longMsg,
-          agentId: "omnibot",
+          conversationId: testConversationId("omnibot"),
         }),
       );
     });
@@ -284,14 +287,16 @@ describe("metabot > ui", () => {
           id: "2",
           type: "text",
           message: longMsg,
-          agentId: "omnibot",
+          conversationId: testConversationId("omnibot"),
         }),
       );
     });
     expect(
       await screen.findByText(/This chat is getting long/),
     ).toBeInTheDocument();
-    await userEvent.click(await screen.findByTestId("metabot-reset-long-chat"));
+    await userEvent.click(
+      await screen.findByTestId("metabot-long-chat-new-conversation"),
+    );
 
     await waitFor(() => {
       expect(
@@ -435,14 +440,8 @@ describe("metabot > ui", () => {
     });
 
     it("polls for the title when the stream ends without one", async () => {
-      const conversationId = "abcdabcd-abcd-abcd-abcd-abcdabcdabcd";
-      setup({
-        metabotInitialState: assocIn(
-          getMetabotInitialState(),
-          ["conversations", "omnibot"],
-          createConversation("omnibot", { conversationId, visible: true }),
-        ),
-      });
+      setup({ conversationTitle: null });
+      const conversationId = testConversationId("omnibot");
 
       let titleReady = false;
       fetchMock.removeRoute("metabot-conversation-title");
@@ -520,7 +519,7 @@ describe("metabot > ui", () => {
     it("filters conversations by the current agent's profile", async () => {
       const metabotInitialState = assocIn(
         getMetabotInitialState(),
-        ["conversations", "omnibot", "visible"],
+        ["agents", "omnibot", "visible"],
         true,
       );
 

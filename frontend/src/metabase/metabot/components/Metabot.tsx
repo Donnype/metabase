@@ -107,12 +107,15 @@ const MetabotSidebarActions = ({ agentId }: { agentId: MetabotAgentId }) => {
 };
 
 // TODO: add test coverage for these
-export interface MetabotConfig {
-  agentId: MetabotAgentId;
+export interface MetabotChatConfig {
   emptyText?: string;
   hideSuggestedPrompts?: boolean;
   preventRetryMessage?: boolean;
   suggestionModels: SuggestionModel[];
+}
+
+export interface MetabotConfig extends MetabotChatConfig {
+  agentId: MetabotAgentId;
 }
 
 export interface MetabotProps {
@@ -122,7 +125,8 @@ export interface MetabotProps {
 
 export const MetabotAuthenticated = ({ hide, config }: MetabotProps) => {
   const agentId = config?.agentId ?? "omnibot";
-  const { visible, setVisible } = useMetabotAgent(agentId);
+  const { visible, setVisible, conversationId, createNewConversation } =
+    useMetabotAgent(agentId);
   const [errorBoundaryKey, setErrorBoundaryKey] = useState(0);
   const isAskPage = useIsAskPage();
 
@@ -167,6 +171,8 @@ export const MetabotAuthenticated = ({ hide, config }: MetabotProps) => {
         aria-hidden={!visible}
       >
         <MetabotChat
+          conversationId={conversationId}
+          onNewConversation={createNewConversation}
           config={config}
           headerActions={<MetabotSidebarActions agentId={agentId} />}
         />
