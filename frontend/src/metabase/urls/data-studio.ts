@@ -12,7 +12,6 @@ import type {
   UsageMetadataCandidateSort,
   UsageMetadataCandidateType,
   UsageMetadataCleanupQueue,
-  UsageMetadataDismissedFilter,
   UsageMetadataModelingStatus,
   UsageMetadataSignal,
   UsageMetadataSortDirection,
@@ -116,7 +115,6 @@ export type DataStudioCleanupParams = {
   candidateType?: UsageMetadataCandidateType;
   modelingStatus?: UsageMetadataModelingStatus;
   signal?: UsageMetadataSignal;
-  dismissed?: UsageMetadataDismissedFilter;
   sort?: UsageMetadataCandidateSort;
   direction?: UsageMetadataSortDirection;
   queue?: UsageMetadataCleanupQueue;
@@ -131,7 +129,6 @@ function getCleanupQueryString({
   candidateType,
   modelingStatus,
   signal,
-  dismissed,
   sort,
   direction,
   queue,
@@ -159,16 +156,13 @@ function getCleanupQueryString({
   if (signal) {
     params.set("signal", signal);
   }
-  if (dismissed && dismissed !== "exclude") {
-    params.set("dismissed", dismissed);
-  }
   if (sort && sort !== "priority") {
     params.set("sort", sort);
   }
   if (direction && direction !== "asc") {
     params.set("direction", direction);
   }
-  if (queue && queue !== "recommended") {
+  if (queue && queue !== "suggested") {
     params.set("queue", queue);
   }
   if (candidateId != null) {
