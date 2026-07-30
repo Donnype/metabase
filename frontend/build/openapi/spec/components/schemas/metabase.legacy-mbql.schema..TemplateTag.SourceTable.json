@@ -1,0 +1,36 @@
+{
+  "description": "Things required by all template tag types.",
+  "properties": {
+    "display-name": {
+      "$ref": "./metabase.lib.schema.common.non-blank-string.json"
+    },
+    "emit-alias": {
+      "type": "boolean"
+    },
+    "id": {
+      "$ref": "./metabase.lib.schema.template-tag.id.json"
+    },
+    "name": {
+      "$ref": "./metabase.lib.schema.common.non-blank-string.json"
+    },
+    "source-filters": {
+      "items": {
+        "$ref": "./metabase.legacy-mbql.schema..TemplateTag.SourceFilter.json"
+      },
+      "type": "array"
+    },
+    "table-id": {
+      "$ref": "./metabase.lib.schema.id.table.json"
+    },
+    "type": {
+      "const": "table"
+    }
+  },
+  "required": [
+    "type",
+    "name",
+    "display-name",
+    "table-id"
+  ],
+  "type": "object"
+}

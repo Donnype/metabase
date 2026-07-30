@@ -1,0 +1,27 @@
+{
+  "description": "Channel Template schema for API-provided templates. Does not allow handlebars-resource.",
+  "oneOf": [
+    {
+      "properties": {
+        "channel_type": {},
+        "details": {
+          "$ref": "./metabase.channel.models.channel.ChannelTemplateEmailDetailsUserProvided.json"
+        }
+      },
+      "required": [
+        "channel_type",
+        "details"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "channel_type": {}
+      },
+      "required": [
+        "channel_type"
+      ],
+      "type": "object"
+    }
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "allOf": [
+    {
+      "additionalProperties": {},
+      "type": "object"
+    },
+    {
+      "properties": {
+        "user_is_viewing": {
+          "items": {
+            "anyOf": [
+              {
+                "properties": {
+                  "chart_configs": {
+                    "items": {
+                      "properties": {
+                        "query": {
+                          "anyOf": [
+                            {
+                              "$ref": "./metabase.lib.schema.query.json"
+                            },
+                            {
+                              "$ref": "./metabase.legacy-mbql.schema.Query.json"
+                            }
+                          ]
+                        }
+                      },
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "query": {
+                    "anyOf": [
+                      {
+                        "$ref": "./metabase.lib.schema.query.json"
+                      },
+                      {
+                        "$ref": "./metabase.legacy-mbql.schema.Query.json"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "enum": [
+                      "model",
+                      "question",
+                      "metric",
+                      "adhoc"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "query": {
+                    "anyOf": [
+                      {
+                        "$ref": "./metabase.lib.schema.query.json"
+                      },
+                      {
+                        "$ref": "./metabase.legacy-mbql.schema.Query.json"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "enum": [
+                      "dashboard",
+                      "model",
+                      "transform",
+                      "code_editor",
+                      "document",
+                      "question",
+                      "metric",
+                      "adhoc"
+                    ],
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    }
+  ]
+}

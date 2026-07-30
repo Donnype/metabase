@@ -1,0 +1,19 @@
+{
+  "allOf": [
+    {
+      "properties": {},
+      "type": "object"
+    },
+    {
+      "oneOf": [
+        {
+          "$ref": "./metabase.legacy-mbql.schema.NativeSourceQuery.json"
+        },
+        {
+          "$ref": "./metabase.legacy-mbql.schema.MBQLInnerQuery.json"
+        }
+      ]
+    }
+  ],
+  "description": "Schema for a valid value for a `:source-query`."
+}

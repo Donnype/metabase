@@ -1,0 +1,116 @@
+{
+  "post": {
+    "description": "Respond to activities in Slack",
+    "operationId": "post-api-metabot-slack-events",
+    "parameters": [],
+    "requestBody": {
+      "content": {
+        "application/json": {
+          "schema": {
+            "oneOf": [
+              {
+                "properties": {
+                  "challenge": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "const": "url_verification"
+                  }
+                },
+                "required": [
+                  "type",
+                  "challenge"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "event": {
+                    "properties": {
+                      "event_ts": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "event_ts"
+                    ],
+                    "type": "object"
+                  },
+                  "type": {
+                    "const": "event_callback"
+                  }
+                },
+                "required": [
+                  "type",
+                  "event"
+                ],
+                "type": "object"
+              },
+              {
+                "properties": {
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "type": "object"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "responses": {
+      "2XX": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "properties": {
+                "body": {
+                  "type": "string"
+                },
+                "headers": {
+                  "properties": {
+                    "Content-Type": {
+                      "const": "text/plain"
+                    }
+                  },
+                  "required": [
+                    "Content-Type"
+                  ],
+                  "type": "object"
+                },
+                "status": {
+                  "const": 200
+                }
+              },
+              "required": [
+                "status",
+                "headers",
+                "body"
+              ],
+              "type": "object"
+            }
+          }
+        },
+        "description": "Successful response"
+      },
+      "4XX": {
+        "description": "Client error response"
+      },
+      "5XX": {
+        "description": "Server error response"
+      }
+    },
+    "summary": "POST /api/metabot/slack/events",
+    "tags": [
+      "/api/metabot/slack"
+    ]
+  }
+}

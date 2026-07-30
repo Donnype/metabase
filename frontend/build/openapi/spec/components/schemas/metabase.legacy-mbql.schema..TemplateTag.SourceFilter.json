@@ -1,0 +1,26 @@
+{
+  "description": "Schema for a single source-filter applied to a table template tag.",
+  "properties": {
+    "field-id": {
+      "$ref": "./metabase.lib.schema.id.field.json"
+    },
+    "op": {
+      "enum": [
+        "<=",
+        ">",
+        ">=",
+        "!=",
+        "=",
+        "<"
+      ],
+      "type": "string"
+    },
+    "value": {}
+  },
+  "required": [
+    "field-id",
+    "op",
+    "value"
+  ],
+  "type": "object"
+}

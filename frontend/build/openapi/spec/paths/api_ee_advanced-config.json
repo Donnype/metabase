@@ -1,0 +1,56 @@
+{
+  "post": {
+    "description": "Apply an uploaded `config.yml` to this instance. Runs the same per-section\n  initializers (`settings`, `databases`, `users`, `api-keys`, ...)\n  the boot-time loader runs. Superuser-only.\n\n  Unlike the boot-time loader, `{{env VAR}}` templates are NOT expanded — the\n  file's values are inserted verbatim, so an admin's upload can't read\n  server-side environment variables it didn't intend to.",
+    "operationId": "post-api-ee-advanced-config",
+    "parameters": [],
+    "requestBody": {
+      "content": {
+        "multipart/form-data": {
+          "schema": {
+            "properties": {
+              "config": {
+                "properties": {
+                  "filename": {
+                    "type": "string"
+                  },
+                  "tempfile": {}
+                },
+                "required": [
+                  "filename",
+                  "tempfile"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "config"
+            ],
+            "type": "object"
+          }
+        }
+      }
+    },
+    "responses": {
+      "2XX": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "null"
+            }
+          }
+        },
+        "description": "Successful response"
+      },
+      "4XX": {
+        "description": "Client error response"
+      },
+      "5XX": {
+        "description": "Server error response"
+      }
+    },
+    "summary": "POST /api/ee/advanced-config",
+    "tags": [
+      "/api/ee/advanced-config"
+    ]
+  }
+}
