@@ -281,8 +281,8 @@
   ::mbql.s/DateTimeValue)
 
 (def mbql.schema.Aggregation
-  "::mbql.s/Aggregation"
-  ::mbql.s/Aggregation)
+  "::mbql.s/AnyAggregation"
+  ::mbql.s/AnyAggregation)
 
 (def mbql.schema.OrderBy
   "::mbql.s/OrderBy"
