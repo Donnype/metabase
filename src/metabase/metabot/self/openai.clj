@@ -1,7 +1,6 @@
 (ns metabase.metabot.self.openai
   (:require
    [clojure.string :as str]
-   [metabase.llm.settings :as llm]
    [metabase.metabot.self.core :as core]
    [metabase.metabot.self.debug :as debug]
    [metabase.metabot.self.schema :as schema]
@@ -267,9 +266,8 @@
     (throw (ai-proxy-unsupported-ex)))
   (try
     (let [auth (core/resolve-auth "openai" "OpenAI"
-                                  (when-let [k (or (not-empty (:api-key credentials))
-                                                   (not-empty (llm/llm-openai-api-key)))]
-                                    {:url     (or (not-empty (:base-url credentials)) (llm/llm-openai-api-base-url))
+                                  (when-let [k (not-empty (:api-key credentials))]
+                                    {:url     (:base-url credentials)
                                      :headers {"Authorization" (str "Bearer " k)}})
                                   ai-proxy?)
           res  (core/request auth {:method  :get
@@ -352,12 +350,10 @@
     (throw (ai-proxy-unsupported-ex)))
   (let [req (openai-request-body opts)]
     (try
-      (let [api-key  (or (not-empty (:api-key credentials))
-                         (not-empty (llm/llm-openai-api-key)))
+      (let [api-key  (not-empty (:api-key credentials))
             auth     (core/resolve-auth "openai" "OpenAI"
                                         (when api-key
-                                          {:url     (or (not-empty (:base-url credentials))
-                                                        (llm/llm-openai-api-base-url))
+                                          {:url     (:base-url credentials)
                                            :headers {"Authorization" (str "Bearer " api-key)}})
                                         ai-proxy?)
             response (core/request auth
