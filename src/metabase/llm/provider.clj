@@ -87,6 +87,7 @@
    {:type          "mistral"
     :label         (deferred-tru "Mistral")
     :default-model "mistral-medium-3-5"
+    :mini-model    "mistral-medium-3-5"
     :fields        [{:key         :api-key
                      :label       (deferred-tru "API key")
                      :type        :password
@@ -102,6 +103,7 @@
    {:type          "zai"
     :label         (deferred-tru "Z.AI")
     :default-model "glm-5.2"
+    :mini-model    "glm-5.2"
     :fields        [{:key         :api-key
                      :label       (deferred-tru "API key")
                      :type        :password
@@ -117,6 +119,7 @@
    {:type          "moonshot"
     :label         (deferred-tru "Moonshot AI")
     :default-model "kimi-k3"
+    :mini-model    "kimi-k3"
     :fields        [{:key         :api-key
                      :label       (deferred-tru "API key")
                      :type        :password
@@ -312,8 +315,9 @@
 
 (defn mini-model
   "The fastest and cheapest model `type-name` serves — what short utility calls such as conversation titles run on
-  when no model has been picked for them. Returns nil for types with no such model: Azure, whose models are
-  deployment names the admin chooses, and the managed provider, which serves a single benchmarked model."
+  when no model has been picked for them. Returns nil for the types that have no cheaper tier to fall back to: the
+  ones whose connection names the single model it serves rather than picking from a catalog, and the managed
+  provider, which serves one benchmarked model."
   [type-name]
   (:mini-model (provider-type type-name)))
 
