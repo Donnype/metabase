@@ -3214,6 +3214,7 @@
   {:team "UX West"
    :api  #{metabase-enterprise.data-studio.api}
    :uses #{api
+           app-db
            collections
            events
            measures
