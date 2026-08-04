@@ -16,10 +16,10 @@ import { runRtkEndpoint } from "metabase/api/utils/run-rtk-endpoint";
 import { EmptyState } from "metabase/common/components/EmptyState";
 import { LoadingAndErrorWrapper } from "metabase/common/components/LoadingAndErrorWrapper";
 import CS from "metabase/css/core/index.css";
+import { canUserCreateQueries } from "metabase/current-user";
 import { connect } from "metabase/redux";
 import { fetchTableMetadata } from "metabase/redux/tables";
 import { getMetadata } from "metabase/selectors/metadata";
-import { canUserCreateQueries } from "metabase/selectors/user";
 import { getSetting } from "metabase/settings";
 import { Box, Popover } from "metabase/ui";
 import {

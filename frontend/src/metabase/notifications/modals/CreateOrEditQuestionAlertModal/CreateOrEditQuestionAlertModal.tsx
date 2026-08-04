@@ -11,6 +11,11 @@ import {
   useUpdateNotificationMutation,
 } from "metabase/api";
 import CS from "metabase/css/core/index.css";
+import {
+  canAccessSettings,
+  getUser,
+  getUserIsAdmin,
+} from "metabase/current-user";
 import { isEmbeddingSdk } from "metabase/embedding-sdk/config";
 import {
   alertIsValid,
@@ -23,11 +28,6 @@ import {
 } from "metabase/pulse";
 import { useDispatch, useSelector } from "metabase/redux";
 import { addUndo } from "metabase/redux/undo";
-import {
-  canAccessSettings,
-  getUser,
-  getUserIsAdmin,
-} from "metabase/selectors/user";
 import {
   Button,
   Flex,
