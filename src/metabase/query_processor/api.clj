@@ -95,6 +95,7 @@
 (api.macros/defendpoint :post "/"
   :- (server/streaming-response-schema ::qp.schema/query-result)
   "Execute a query and retrieve the results in the usual format. The query will not use the cache."
+  {:scope "data-app"}
   [_route-params
    _query-params
    query :- [:map {:closed false}
@@ -127,6 +128,7 @@
 (api.macros/defendpoint :post ["/:export-format", :export-format qp.schema/export-formats-regex]
   :- (server/streaming-response-schema ::qp.schema/query-result)
   "Execute a query and download the result data as a file in the specified format."
+  {:scope "data-app"}
   [{:keys [export-format]} :- [:map
                                [:export-format ::qp.schema/export-format]]
    _query-params
@@ -184,6 +186,7 @@
 
   You can pass `{:settings {:include-sensitive-fields true}}` in the query to include fields with
   visibility_type :sensitive in the response."
+  {:scope "data-app"}
   [_route-params
    _query-params
    query :- [:map {:closed false}
@@ -217,6 +220,7 @@
 (api.macros/defendpoint :post "/pivot"
   :- (server/streaming-response-schema ::qp.schema/query-result)
   "Generate a pivoted dataset for an ad-hoc query"
+  {:scope "data-app"}
   [_route-params
    _query-params
    {:keys [database] :as query} :- [:map {:closed false}
@@ -261,6 +265,7 @@
 #_{:clj-kondo/ignore [:metabase/validate-defendpoint-has-response-schema]}
 (api.macros/defendpoint :post "/parameter/values"
   "Return parameter values for cards or dashboards that are being edited."
+  {:scope "data-app"}
   [_route-params
    _query-params
    {:keys     [parameter]
@@ -275,6 +280,7 @@
 #_{:clj-kondo/ignore [:metabase/validate-defendpoint-has-response-schema]}
 (api.macros/defendpoint :post "/parameter/search/:query"
   "Return parameter values for cards or dashboards that are being edited. Expects a query string at `?query=foo`."
+  {:scope "data-app"}
   [{:keys [query]} :- [:map
                        [:query ms/NonBlankString]]
    _query-params
@@ -304,6 +310,7 @@
 #_{:clj-kondo/ignore [:metabase/validate-defendpoint-has-response-schema]}
 (api.macros/defendpoint :post "/parameter/remapping"
   "Return the remapped parameter values for cards or dashboards that are being edited."
+  {:scope "data-app"}
   [_route-params
    _query-params
    {:keys [parameter value field_ids]} :- [:map
