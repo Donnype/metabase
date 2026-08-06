@@ -26,6 +26,9 @@ import type {
 import { Api } from "./api";
 import { idTag, invalidateTags, listTag } from "./tags";
 
+const touchesCredentials = (body: UpdateMetabotSettingsRequest) =>
+  "credentials" in body || "api-key" in body;
+
 export const metabotApi = Api.injectEndpoints({
   endpoints: (builder) => ({
     listMetabots: builder.query<{ items: MetabotInfo[] }, void>({
@@ -84,8 +87,13 @@ export const metabotApi = Api.injectEndpoints({
         url: "/api/metabot/settings",
         body,
       }),
-      invalidatesTags: (_, error) =>
-        invalidateTags(error, ["session-properties"]),
+      invalidatesTags: (_, error, body) =>
+        invalidateTags(error, [
+          "session-properties",
+          // A credential write can change which models the provider serves, e.g. a different Bedrock
+          // region, Google location, or Azure resource.
+          ...(touchesCredentials(body) ? [listTag("llm-models")] : []),
+        ]),
     }),
     updateMetabot: builder.mutation<
       MetabotInfo,
