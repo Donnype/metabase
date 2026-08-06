@@ -987,8 +987,8 @@
 
   embeddings
   {:team "Metabot"
-   :api  #{metabase.embeddings.provider}
-   :uses #{util}}
+   :api  #{metabase.embeddings.provider metabase.embeddings.startup}
+   :uses #{plugins util}}
 
   entity-retrieval
   {:team "Metabot"
@@ -3189,6 +3189,7 @@
            collections
            config
            driver
+           embeddings
            metabot
            models
            premium-features
