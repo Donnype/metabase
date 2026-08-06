@@ -1,6 +1,7 @@
 import { t } from "ttag";
 
 import { useEnsureDefaultEmbeddingThemes } from "metabase/admin/embedding/hooks";
+import { useHasTokenFeature } from "metabase/common/hooks";
 import { useUserKeyValue } from "metabase/common/hooks/use-user-key-value";
 import { AreaLayout, AreaTab } from "metabase/nav/components/AreaLayout";
 import { useDispatch } from "metabase/redux";
@@ -31,6 +32,7 @@ export function EmbeddingHubLayout() {
   const isNavbarOpened = navbarOpenedValue !== false;
 
   const { pathname } = useLocation();
+  const hasSsoJwt = useHasTokenFeature("sso_jwt");
 
   useEnsureDefaultEmbeddingThemes();
 
@@ -42,6 +44,12 @@ export function EmbeddingHubLayout() {
       label: t`Security`,
       icon: "shield_outline",
       to: Urls.embeddingHubSecurity(),
+    },
+    {
+      label: t`Authentication`,
+      icon: "lock",
+      to: Urls.embeddingHubAuthentication(),
+      isGated: !hasSsoJwt,
     },
   ];
 

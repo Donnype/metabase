@@ -6,7 +6,11 @@ import { Navigate, Route } from "metabase/router";
 import * as Urls from "metabase/urls";
 
 import { EmbeddingHubLayout } from "./components/EmbeddingHubLayout";
-import { EmbeddingHubGetStartedPage, EmbeddingHubSecurityPage } from "./pages";
+import {
+  EmbeddingHubAuthenticationPage,
+  EmbeddingHubGetStartedPage,
+  EmbeddingHubSecurityPage,
+} from "./pages";
 import { CanAccessEmbeddingHub } from "./route-guards";
 
 /**
@@ -41,6 +45,10 @@ export function getEmbeddingHubRoutes() {
         </Route>
 
         <Route path="security" element={<EmbeddingHubSecurityPage />} />
+        <Route
+          path="authentication"
+          element={<EmbeddingHubAuthenticationPage />}
+        />
       </Route>
     </Route>
   );
