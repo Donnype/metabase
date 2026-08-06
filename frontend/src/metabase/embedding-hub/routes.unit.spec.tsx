@@ -66,6 +66,18 @@ jest.mock("./pages/EmbeddingHubTenancyPage", () => ({
   ),
 }));
 
+jest.mock("./pages/EmbeddingHubAppearancePage", () => ({
+  EmbeddingHubAppearancePage: () => (
+    <div data-testid="theme-listing-page">{"Appearance"}</div>
+  ),
+}));
+
+jest.mock("metabase/admin/embedding/components/ThemeEditor", () => ({
+  EmbeddingThemeEditorApp: ({ basePath }: { basePath?: string }) => (
+    <div data-testid="theme-editor-page">{basePath}</div>
+  ),
+}));
+
 jest.mock("metabase/embedding/setup-guide", () => ({
   SetupPermissionsAndTenantsPage: () => (
     <div data-testid="permissions-setup-page">{"Permissions setup"}</div>
@@ -109,6 +121,20 @@ describe("embedding hub routes", () => {
     setup("/embedding");
 
     expect(await screen.findByTestId("get-started-page")).toBeInTheDocument();
+  });
+
+  it("renders the theme listing on the appearance tab", async () => {
+    setup("/embedding/appearance");
+
+    expect(await screen.findByTestId("theme-listing-page")).toBeInTheDocument();
+  });
+
+  it("renders the theme editor for a single theme, scoped to the hub path", async () => {
+    setup("/embedding/appearance/12");
+
+    expect(await screen.findByTestId("theme-editor-page")).toHaveTextContent(
+      "/embedding/appearance",
+    );
   });
 
   it("does not render anything when the guard denies access", async () => {

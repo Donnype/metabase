@@ -30,6 +30,7 @@ const TAB_LABELS = [
   "Authentication",
   "Permissions",
   "Tenancy",
+  "Appearance",
 ];
 
 type SetupOptions = {
