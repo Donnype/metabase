@@ -24,7 +24,13 @@ jest.mock("metabase/nav/components/AppSwitcher", () => ({
 }));
 
 // Each later issue adds its own tab and extends this list.
-const TAB_LABELS = ["Get started", "Security", "Authentication", "Permissions"];
+const TAB_LABELS = [
+  "Get started",
+  "Security",
+  "Authentication",
+  "Permissions",
+  "Tenancy",
+];
 
 type SetupOptions = {
   initialRoute?: string;

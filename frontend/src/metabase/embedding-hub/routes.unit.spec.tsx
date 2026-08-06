@@ -60,6 +60,12 @@ jest.mock("./pages/EmbeddingHubPermissionsPage", () => ({
   ),
 }));
 
+jest.mock("./pages/EmbeddingHubTenancyPage", () => ({
+  EmbeddingHubTenancyPage: () => (
+    <div data-testid="tenancy-page">{"Tenancy"}</div>
+  ),
+}));
+
 jest.mock("metabase/embedding/setup-guide", () => ({
   SetupPermissionsAndTenantsPage: () => (
     <div data-testid="permissions-setup-page">{"Permissions setup"}</div>
@@ -92,6 +98,7 @@ describe("embedding hub routes", () => {
     ["/embedding/security", "security-page"],
     ["/embedding/authentication", "authentication-page"],
     ["/embedding/permissions", "permissions-page"],
+    ["/embedding/tenancy", "tenancy-page"],
   ])("renders the body for %s", async (route, testId) => {
     setup(route);
 

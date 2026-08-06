@@ -1,8 +1,10 @@
 import { getRoutes as getAdminPermissionsRoutes } from "metabase/admin/permissions/routes";
+import { UpsellTenants } from "metabase/admin/upsells";
 import {
   SetupPermissionsAndTenantsPage,
   SetupSsoPage,
 } from "metabase/embedding/setup-guide";
+import { PLUGIN_TENANTS } from "metabase/plugins";
 import { Navigate, Route } from "metabase/router";
 import * as Urls from "metabase/urls";
 
@@ -12,6 +14,7 @@ import {
   EmbeddingHubGetStartedPage,
   EmbeddingHubPermissionsPage,
   EmbeddingHubSecurityPage,
+  EmbeddingHubTenancyPage,
 } from "./pages";
 import { CanAccessEmbeddingHub } from "./route-guards";
 
@@ -53,6 +56,14 @@ export function getEmbeddingHubRoutes() {
         />
         <Route path="permissions" element={<EmbeddingHubPermissionsPage />}>
           {getAdminPermissionsRoutes()}
+        </Route>
+        <Route path="tenancy" element={<EmbeddingHubTenancyPage />}>
+          {/* Null on OSS, and on EE it is assigned during plugin init. The
+              fallback mirrors admin's: without it the tab would have no child
+              routes at all if this tree were ever built before init runs. */}
+          {PLUGIN_TENANTS.tenantsRoutes ?? (
+            <Route index element={<UpsellTenants />} />
+          )}
         </Route>
       </Route>
     </Route>
