@@ -14,6 +14,7 @@ import {
   EmbeddingHubAppearancePage,
   EmbeddingHubAuthenticationPage,
   EmbeddingHubGetStartedPage,
+  EmbeddingHubLocalizationPage,
   EmbeddingHubPermissionsPage,
   EmbeddingHubSecurityPage,
   EmbeddingHubTenancyPage,
@@ -78,6 +79,7 @@ export function getEmbeddingHubRoutes() {
             }
           />
         </Route>
+        <Route path="localization" element={<EmbeddingHubLocalizationPage />} />
       </Route>
     </Route>
   );

@@ -31,6 +31,7 @@ const TAB_LABELS = [
   "Permissions",
   "Tenancy",
   "Appearance",
+  "Localization",
 ];
 
 type SetupOptions = {
