@@ -18,6 +18,10 @@ export function embeddingHubAuthentication() {
   return `${ROOT_URL}/authentication`;
 }
 
+export function embeddingHubPermissions() {
+  return `${ROOT_URL}/permissions`;
+}
+
 export function embeddingHubAppearance() {
   return `${ROOT_URL}/appearance`;
 }

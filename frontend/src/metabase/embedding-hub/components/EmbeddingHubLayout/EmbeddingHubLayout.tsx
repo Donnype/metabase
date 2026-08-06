@@ -51,6 +51,7 @@ export function EmbeddingHubLayout() {
       to: Urls.embeddingHubAuthentication(),
       isGated: !hasSsoJwt,
     },
+    { label: t`Permissions`, icon: "key", to: Urls.embeddingHubPermissions() },
   ];
 
   const upperNav = (

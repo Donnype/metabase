@@ -20,6 +20,21 @@ describe("scenarios > embedding > embedding hub", () => {
       H.activateToken("pro-self-hosted");
     });
 
+    it("keeps the permissions editor's links inside the hub", () => {
+      H.updateSetting("use-tenants", true);
+
+      cy.visit("/embedding/permissions");
+
+      cy.log("The editor renders at the hub's path, not admin's");
+      cy.url().should("include", "/embedding/permissions");
+
+      cy.log("Drilling into a group stays in the hub");
+      cy.findByTestId("permission-table").findAllByRole("link").first().click();
+
+      cy.url().should("include", "/embedding/permissions");
+      cy.url().should("not.include", "/admin/permissions");
+    });
+
     it("lists published guest embeds even after guest embeds are switched off", () => {
       cy.log("Publish a dashboard as a guest embed");
       H.createDashboard({ name: "Published dashboard" }).then(

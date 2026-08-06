@@ -1,3 +1,4 @@
+import { getRoutes as getAdminPermissionsRoutes } from "metabase/admin/permissions/routes";
 import {
   SetupPermissionsAndTenantsPage,
   SetupSsoPage,
@@ -9,6 +10,7 @@ import { EmbeddingHubLayout } from "./components/EmbeddingHubLayout";
 import {
   EmbeddingHubAuthenticationPage,
   EmbeddingHubGetStartedPage,
+  EmbeddingHubPermissionsPage,
   EmbeddingHubSecurityPage,
 } from "./pages";
 import { CanAccessEmbeddingHub } from "./route-guards";
@@ -49,6 +51,9 @@ export function getEmbeddingHubRoutes() {
           path="authentication"
           element={<EmbeddingHubAuthenticationPage />}
         />
+        <Route path="permissions" element={<EmbeddingHubPermissionsPage />}>
+          {getAdminPermissionsRoutes()}
+        </Route>
       </Route>
     </Route>
   );
