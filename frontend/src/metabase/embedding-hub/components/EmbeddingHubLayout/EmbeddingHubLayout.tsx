@@ -34,11 +34,15 @@ export function EmbeddingHubLayout() {
 
   useEnsureDefaultEmbeddingThemes();
 
-  // Order comes from the design. One tab today; each of the remaining six
-  // arrives with its own issue and adds its entry here, gated on the feature
-  // it needs.
+  // Order comes from the design. Each remaining tab arrives with its own issue
+  // and adds its entry here, gated on the feature it needs.
   const tabs: EmbeddingHubTab[] = [
     { label: t`Get started`, icon: "list", to: Urls.embeddingHubGetStarted() },
+    {
+      label: t`Security`,
+      icon: "shield_outline",
+      to: Urls.embeddingHubSecurity(),
+    },
   ];
 
   const upperNav = (

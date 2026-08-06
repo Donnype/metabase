@@ -23,8 +23,8 @@ jest.mock("metabase/nav/components/AppSwitcher", () => ({
   AppSwitcher: () => null,
 }));
 
-// One tab today; each later issue adds its own and extends this list.
-const TAB_LABELS = ["Get started"];
+// Each later issue adds its own tab and extends this list.
+const TAB_LABELS = ["Get started", "Security"];
 
 type SetupOptions = {
   initialRoute?: string;
@@ -56,6 +56,7 @@ function setup({
           element={<div>{"Permissions wizard body"}</div>}
         />
       </Route>
+      <Route path="security" element={<div>{"Security body"}</div>} />
     </Route>,
     {
       withRouter: true,
