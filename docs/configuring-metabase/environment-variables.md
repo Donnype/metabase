@@ -1412,6 +1412,56 @@ The AWS session token used by the Amazon Bedrock connection configured from the 
 
 TCP connection timeout in milliseconds for LLM API requests. A provider that is down or unreachable should fail fast instead of holding a worker thread forever.
 
+### `MB_LLM_GOOGLE_API_BASE_URL`
+
+- Type: string
+- Default: `https://aiplatform.googleapis.com`
+- Environment variable only: you can't set this in the Admin settings or in a [configuration file](./config-file.md).
+
+The Gemini Enterprise Agent Platform API base URL. Leave unset to derive it from the location.
+
+The Gemini Enterprise Agent Platform API base URL used by the connection configured from the environment.
+
+### `MB_LLM_GOOGLE_LOCATION`
+
+- Type: string
+- Default: `null`
+- Environment variable only: you can't set this in the Admin settings or in a [configuration file](./config-file.md).
+
+The Google Cloud location for the Gemini Enterprise Agent Platform (e.g. us-central1). Defaults to global.
+
+The Google Cloud location used by the Gemini Enterprise Agent Platform connection configured from the environment.
+
+### `MB_LLM_GOOGLE_OAUTH_ACCESS_TOKEN`
+
+- Type: string
+- Default: `null`
+- Environment variable only: you can't set this in the Admin settings or in a [configuration file](./config-file.md).
+
+A short-lived OAuth2 access token for the Gemini Enterprise Agent Platform (e.g. from `gcloud auth print-access-token`). Useful for testing.
+
+The OAuth2 access token used by the Gemini Enterprise Agent Platform connection configured from the environment, when it carries no service account key.
+
+### `MB_LLM_GOOGLE_PROJECT_ID`
+
+- Type: string
+- Default: `null`
+- Environment variable only: you can't set this in the Admin settings or in a [configuration file](./config-file.md).
+
+The Google Cloud project ID for the Gemini Enterprise Agent Platform.
+
+The Google Cloud project used by the Gemini Enterprise Agent Platform connection configured from the environment.
+
+### `MB_LLM_GOOGLE_SERVICE_ACCOUNT_KEY`
+
+- Type: string
+- Default: `null`
+- Environment variable only: you can't set this in the Admin settings or in a [configuration file](./config-file.md).
+
+A Google Cloud service account key JSON for the Gemini Enterprise Agent Platform. Takes precedence over the OAuth access token when both are set.
+
+Sets up the Gemini Enterprise Agent Platform provider connection from the environment. A connection configured this way is read-only in the UI and takes precedence over a stored connection with the same key; connections are otherwise managed on the admin AI settings page.
+
 ### `MB_LLM_MAX_TOKENS`
 
 - Type: integer
