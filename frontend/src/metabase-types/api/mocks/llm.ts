@@ -1,4 +1,5 @@
 import type {
+  LlmActiveModel,
   LlmConnectionModels,
   LlmModel,
   LlmProviderConnection,
@@ -38,8 +39,22 @@ export const createMockLlmProviderConnection = (
   name: "Anthropic",
   source: "db",
   usable: true,
+  reorderable: true,
+  error: null,
   env_vars: [],
   config: {},
+  ...opts,
+});
+
+export const createMockLlmActiveModel = (
+  opts?: Partial<LlmActiveModel>,
+): LlmActiveModel => ({
+  model_ref: "anthropic/claude-sonnet-4-6",
+  model: "claude-sonnet-4-6",
+  connection_key: "anthropic",
+  connection_name: "Anthropic",
+  selected_model_ref: "anthropic/claude-sonnet-4-6",
+  is_fallback: false,
   ...opts,
 });
 
