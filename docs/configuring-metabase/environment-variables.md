@@ -1478,6 +1478,14 @@ Maximum tokens for LLM responses.
 
 The AI provider connection and model for Metabot. Format: connection-key/model-name, e.g. `anthropic/claude-haiku-4-5`, `openai/gpt-5.4`, `openrouter/anthropic/claude-haiku-4.5`. The connection key names an entry in the `llm-providers` setting and defaults to the provider type.
 
+### `MB_LLM_MINI_MODEL`
+
+- Type: string
+- Default: `null`
+- [Configuration file name](./config-file.md): `llm-mini-model`
+
+The AI provider connection and model used for quick background tasks, such as naming Metabot conversations, in the same connection-key/model-name format as `llm-metabot-provider`. Defaults to the fastest model offered by the connection Metabot runs on.
+
 ### `MB_LLM_MISTRAL_API_BASE_URL`
 
 - Type: string
@@ -1565,6 +1573,19 @@ The OpenRouter API base URL used by the connection configured from the environme
 The OpenRouter API Key.
 
 Sets up the OpenRouter provider connection from the environment. A connection configured this way is read-only in the UI and takes precedence over a stored connection with the same key; connections are otherwise managed on the admin AI settings page.
+
+### `MB_LLM_PROVIDER_FALLBACK_ENABLED`
+
+- Type: boolean
+- Default: `true`
+- [Exported as](../installation-and-operation/serialization.md): `llm-provider-fallback-enabled`.
+- [Configuration file name](./config-file.md): `llm-provider-fallback-enabled`
+
+Whether Metabot switches to the next connected provider when the one it is set to use is failing.
+
+When a provider rejects Metabase's requests, Metabase records the failure and — with this on — runs on the default model of the next connection in `llm-providers` instead, until the original one works again. Turn it off to have requests fail on the selected provider rather than move to another one.
+
+`llm-providers` is a priority list, not a rotation: requests always go to the highest connection in it that is working, so they return to the selected provider as soon as it stops failing. Nothing is load balanced across connections.
 
 ### `MB_LLM_PROVIDERS`
 

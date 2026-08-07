@@ -212,7 +212,9 @@ config:
     llm-connection-timeout-ms: 10000
     llm-max-tokens: 4096
     llm-metabot-provider: anthropic/claude-sonnet-4-6
+    llm-mini-model: null
     llm-openai-model: gpt-5.4
+    llm-provider-fallback-enabled: true
     llm-providers: []
     llm-rate-limit-per-ip: 100
     llm-rate-limit-per-user: 20
