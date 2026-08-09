@@ -13,7 +13,7 @@ import type {
 import type {
   Visualization,
   VisualizationDefinition,
-} from "../types/visualization";
+} from "../types";
 
 // The static-viz bundle registers bare definitions with no component; the app
 // bundles register full components carrying their definition statics.
