@@ -159,7 +159,6 @@ export type ContentDiagnosticsStaleFinding = ContentDiagnosticsBaseFinding & {
 export type ContentDiagnosticsScanResult = {
   scan_id: string;
   finding_count: number;
-  entities_scanned: number;
   duration_ms: number;
 };
 
