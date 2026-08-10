@@ -2659,6 +2659,7 @@
            lib
            lib-be
            models
+           mq
            premium-features
            settings
            task
