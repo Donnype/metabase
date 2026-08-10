@@ -14,12 +14,6 @@ import {
   registerVisualization,
   setDefaultVisualization,
 } from "metabase/visualizations";
-import { setTooltipRootProvider } from "metabase/visualizations/echarts/tooltip";
-import { setComputedSettingsTransform } from "metabase/visualizations/lib/settings";
-import type {
-  ComputedVisualizationSettings,
-  SettingsExtra,
-} from "metabase/visualizations/types";
 
 import { ChartNestedSettingColumns } from "./components/settings/ChartNestedSettingColumns";
 import ChartNestedSettingSeries from "./components/settings/ChartNestedSettingSeries";
@@ -47,7 +41,10 @@ import { ChartSettingSeriesOrder } from "./components/settings/ChartSettingSerie
 import { ChartSettingTableColumns } from "./components/settings/ChartSettingTableColumns";
 import { ChartSettingToggle } from "./components/settings/ChartSettingToggle";
 import { ChartSettingsTableFormatting } from "./components/settings/ChartSettingsTableFormatting";
+import { setTooltipRootProvider } from "./echarts/tooltip";
 import { registerJsxFormatting } from "./lib/register-jsx-formatting";
+import { setComputedSettingsTransform } from "./lib/settings";
+import type { ComputedVisualizationSettings, SettingsExtra } from "./types";
 import { AreaChart } from "./visualizations/AreaChart";
 import { BarChart } from "./visualizations/BarChart";
 import { BoxPlot } from "./visualizations/BoxPlot";
