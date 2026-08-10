@@ -100,7 +100,7 @@ export const useChartEvents = (
   // which matters because the lazily loaded renderer calls `onInit` late.
   chartInstance?: EChartsType,
 ) => {
-  const isBrushing = useRef<boolean>();
+  const isBrushing = useRef<boolean>(undefined);
   useTooltipMouseLeave(chartRef, onHoverChange, containerRef);
 
   const onOpenQuestion = useCallback(

@@ -116,7 +116,7 @@ function CartesianChartInner(props: VisualizationProps) {
   );
   useChartDebug({ isQueryBuilder, rawSeries, option, chartModel });
 
-  const chartRef = useRef<EChartsType>();
+  const chartRef = useRef<EChartsType>(undefined);
   // Mirror the ECharts instance into state so that effects depending on it
   // (e.g. brush setup) re-run once it becomes available. With the lazily loaded
   // EChartsRenderer, `onInit` fires after the surrounding effects have already
