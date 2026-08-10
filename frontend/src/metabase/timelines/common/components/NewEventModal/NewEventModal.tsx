@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { useCallback, useMemo } from "react";
+import { type JSX, useCallback, useMemo } from "react";
 import { t } from "ttag";
 
 import { ModalContent } from "metabase/common/components/ModalContent";

@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import type { JSX } from "react";
 import { t } from "ttag";
 
 import type { ColorGetter } from "metabase/ui/colors/types";

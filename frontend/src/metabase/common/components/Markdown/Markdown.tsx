@@ -3,6 +3,7 @@ import type {
   AnchorHTMLAttributes,
   CSSProperties,
   ComponentPropsWithRef,
+  JSX,
 } from "react";
 import { useMemo } from "react";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { type JSX, useMemo } from "react";
 
 import { useListPopularItemsQuery, useListRecentsQuery } from "metabase/api";
 import { LoadingAndErrorWrapper } from "metabase/common/components/LoadingAndErrorWrapper";
