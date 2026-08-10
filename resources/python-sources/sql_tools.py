@@ -705,6 +705,237 @@ def replace_names(sql: str, replacements_json: str, dialect: str = None) -> str:
     return transformed.sql(dialect=dialect)
 
 
+def correct_identifier_casing(sql: str, tables_json: str, dialect: str = None) -> str:
+    """
+    Scope-aware, best-effort correction of identifier casing against synced metadata.
+
+    Rewrites unquoted table/schema/column identifiers whose only difference from the
+    metadata name is letter case. Everything else is left alone: quoted identifiers,
+    catalog-qualified tables, CTEs, derived tables, columns whose source table cannot
+    be uniquely established within their scope, and any name matching several metadata
+    entries case-insensitively. Multi-statement input and anything that fails to parse
+    is returned unchanged, so downstream validation still sees and rejects it.
+
+    Args:
+        sql: SQL query string
+        tables_json: JSON list of synced tables: [{"schema": s|null, "name": n, "columns": [c, ...]}]
+        dialect: SQL dialect string
+
+    Returns the corrected SQL string, or `sql` unchanged when nothing applies.
+    """
+    from sqlglot.optimizer.scope import build_scope, ScopeType
+
+    # The dialects this runs for quote unquoted identifiers exactly as written
+    # (CASE_SENSITIVE_DIALECTS), but the database itself still folds an unquoted
+    # identifier to one canonical case before resolving it. A metadata match is
+    # only trustworthy when its name is exactly that fold of the written spelling:
+    # any other casing is unprovable against a (possibly incomplete, filtered-by-
+    # visibility) synced inventory, since the database would fold to a name the
+    # inventory might not even contain.
+    unquoted_fold = {"postgres": str.lower, "redshift": str.lower,
+                      "snowflake": str.upper, "oracle": str.upper}.get(dialect)
+
+    def fold_matches(name, target):
+        return unquoted_fold is not None and unquoted_fold(name) == target
+
+    try:
+        statements = sqlglot.parse(sql, read=dialect)
+        if len(statements) != 1 or statements[0] is None:
+            return sql
+        root = build_scope(statements[0])
+        if root is None:
+            return sql
+
+        tables_by_lower = {}
+        for t in json.loads(tables_json):
+            tables_by_lower.setdefault(t["name"].lower(), []).append(t)
+
+        def match_table(node):
+            """The unique metadata entry a physical table node names, or None."""
+            if node.catalog or not isinstance(node.this, exp.Identifier):
+                return None
+            candidates = tables_by_lower.get(node.name.lower(), [])
+            if node.db:
+                candidates = [t for t in candidates
+                              if (t.get("schema") or "").lower() == node.db.lower()]
+            if len(candidates) != 1:
+                return None
+            entry = candidates[0]
+            # A quoted identifier denotes an exact object: same-case is a match, any
+            # case difference means a different object, not a casing mistake. An
+            # unquoted one is only a match when the metadata name is exactly its
+            # dialect fold - see fold_matches above.
+            if node.this.quoted:
+                if node.name != entry["name"]:
+                    return None
+            elif not fold_matches(node.name, entry["name"]):
+                return None
+            db_ident = node.args.get("db")
+            if (isinstance(db_ident, exp.Identifier) and db_ident.quoted
+                    and node.db != entry.get("schema")):
+                return None
+            return entry
+
+        modified = False
+
+        def set_ident(node, key, name):
+            nonlocal modified
+            node.set(key, exp.Identifier(this=name, quoted=False))
+            modified = True
+
+        for scope in root.traverse():
+            # source name in this scope -> (metadata entry, the qualifier text column
+            # references must use once transpile quotes everything: the alias as written,
+            # or the corrected table name)
+            physical = {}
+            # Sources with an explicit column-alias list (`AS o(a, b)`) redefine the
+            # visible column names entirely, so the physical names aren't what a
+            # reference in this query names; field correction is skipped for them.
+            column_aliased = set()
+            for name, source in scope.sources.items():
+                if not isinstance(source, exp.Table):
+                    continue
+                entry = match_table(source)
+                if entry is None:
+                    continue
+                if not source.this.quoted and source.name != entry["name"]:
+                    set_ident(source, "this", entry["name"])
+                db_ident = source.args.get("db")
+                if (isinstance(db_ident, exp.Identifier) and not db_ident.quoted
+                        and entry.get("schema") and source.db != entry["schema"]
+                        and fold_matches(source.db, entry["schema"])):
+                    set_ident(source, "db", entry["schema"])
+                physical[name] = (entry, name if source.alias else entry["name"])
+                alias = source.args.get("alias")
+                if alias and alias.args.get("columns"):
+                    column_aliased.add(name)
+            if not physical:
+                continue
+
+            columns_by_lower = {}
+            for name, (entry, _) in physical.items():
+                by_lower = {}
+                if name not in column_aliased:
+                    for c in entry.get("columns") or []:
+                        by_lower.setdefault(c.lower(), set()).add(c)
+                columns_by_lower[name] = by_lower
+
+            sources_by_lower = {}
+            for name in scope.sources:
+                sources_by_lower.setdefault(name.lower(), []).append(name)
+
+            def resolve_source(ident):
+                """The scope source a qualifier names: exact when quoted, case-folded when not."""
+                if ident.quoted:
+                    return ident.name if ident.name in scope.sources else None
+                candidates = sources_by_lower.get(ident.name.lower(), [])
+                return candidates[0] if len(candidates) == 1 else None
+
+            all_physical = len(physical) == len(scope.sources)
+
+            def unique_real(name_lower):
+                """The single synced casing the name has across this scope's sources, or None."""
+                reals = set()
+                for by_lower in columns_by_lower.values():
+                    reals |= by_lower.get(name_lower, set())
+                return next(iter(reals)) if len(reals) == 1 else None
+
+            # qualified wildcards (orders.*) are exp.Columns too, but scope.columns excludes them
+            raw_columns = list(scope.find_all(exp.Column))
+            raw_ids = {id(c) for c in raw_columns}
+            star_columns = [c for c in raw_columns if isinstance(c.this, exp.Star)]
+            # scope.columns can leak in a column that belongs to a nested scalar-subquery's
+            # own scope (a sqlglot quirk); find_all is properly scope-bounded, so only
+            # process columns this scope's own find_all actually sees.
+            owned_columns = [c for c in scope.columns if id(c) in raw_ids]
+            # Only columns this pass actually resolves as physical go in `seen`: a bare
+            # name that isn't a known physical column may instead be an output-alias
+            # reference (GROUP BY/ORDER BY by alias), which the pass below handles.
+            seen = set()
+            for col in owned_columns + star_columns:
+                table_ident = col.args.get("table")
+                source_name = None
+                if isinstance(table_ident, exp.Identifier):
+                    source_name = resolve_source(table_ident)
+                    if source_name not in physical:
+                        continue
+                    entry, qualifier = physical[source_name]
+                    if not table_ident.quoted and table_ident.name != qualifier:
+                        set_ident(col, "table", qualifier)
+                    db_ident = col.args.get("db")
+                    if (isinstance(db_ident, exp.Identifier) and not db_ident.quoted
+                            and entry.get("schema")
+                            and db_ident.name.lower() == entry["schema"].lower()
+                            and db_ident.name != entry["schema"]
+                            and fold_matches(db_ident.name, entry["schema"])):
+                        set_ident(col, "db", entry["schema"])
+                if not isinstance(col.this, exp.Identifier) or col.this.quoted:
+                    continue
+                if source_name is not None:
+                    reals = columns_by_lower[source_name].get(col.name.lower())
+                    real = next(iter(reals)) if reals and len(reals) == 1 else None
+                    seen.add(id(col))
+                elif all_physical:
+                    real = unique_real(col.name.lower())
+                    if real is None or not fold_matches(col.name, real):
+                        continue
+                    seen.add(id(col))
+                else:
+                    real = None
+                    seen.add(id(col))
+                if real is not None and real != col.name and fold_matches(col.name, real):
+                    original_name = col.name
+                    set_ident(col, "this", real)
+                    # A renamed bare (unaliased) projection changes this scope's implicit
+                    # output name. A CTE or derived table exposes that name to an outer
+                    # reference by name, so pin the original name back on to keep it
+                    # resolvable (a scalar subquery's output name is never referenced).
+                    if (scope.scope_type in (ScopeType.CTE, ScopeType.DERIVED_TABLE)
+                            and any(col is sel for sel in scope.expression.selects)):
+                        col.replace(exp.alias_(col.copy(), exp.to_identifier(original_name, quoted=False)))
+
+            # scope.columns leaves out ORDER BY/DISTINCT references matching a select name and
+            # everything under HAVING; those resolve to an output name, a source column, or both,
+            # so they are rewritten only when every candidate agrees on one casing
+            outs = {}
+            for s in scope.expression.named_selects:
+                outs.setdefault(s.lower(), set()).add(s)
+            for col in raw_columns:
+                if (id(col) in seen or col.args.get("table")
+                        or not isinstance(col.this, exp.Identifier) or col.this.quoted):
+                    continue
+                out_matches = outs.get(col.name.lower(), set())
+                if col.name in out_matches:
+                    continue
+                real = unique_real(col.name.lower()) if all_physical else None
+                if real is not None and not fold_matches(col.name, real):
+                    real = None
+                candidates = out_matches | ({real} if real else set())
+                if len(candidates) == 1:
+                    target = next(iter(candidates))
+                    if target != col.name:
+                        set_ident(col, "this", target)
+
+            # JOIN ... USING (id) holds bare identifiers that name a column in every joined
+            # source, so they are only rewritten when all sources are known and agree
+            if all_physical:
+                for join in scope.expression.args.get("joins") or []:
+                    for ident in join.args.get("using") or []:
+                        if not isinstance(ident, exp.Identifier) or ident.quoted:
+                            continue
+                        real = unique_real(ident.name.lower())
+                        if (real is not None and real != ident.name
+                                and fold_matches(ident.name, real)):
+                            ident.set("this", real)
+                            modified = True
+
+        if not modified:
+            return sql
+        return statements[0].sql(dialect=dialect)
+    except Exception:
+        return sql
+
+
 #############################################################################
 # Field References (Macaw-compatible output)
 #############################################################################
