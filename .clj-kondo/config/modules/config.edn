@@ -1336,6 +1336,7 @@
    :api  #{metabase.measures.api
            metabase.measures.create}
    :uses #{api
+           app-db
            events
            lib
            lib-be
@@ -2126,6 +2127,7 @@
            metabase.segments.create
            metabase.segments.schema}
    :uses #{api
+           app-db
            events
            lib
            lib-be

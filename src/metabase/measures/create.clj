@@ -2,6 +2,7 @@
   "Measure creation shared by REST and domain workflows."
   (:require
    [metabase.api.common :as api]
+   [metabase.app-db.core :as mdb]
    [metabase.events.core :as events]
    [metabase.lib-be.core :as lib-be]
    [metabase.lib.core :as lib]
@@ -41,11 +42,13 @@
   (let [normalized-definition (normalize-input-definition definition)
         table-id              (definition-table-id normalized-definition)]
     (api/create-check :model/Measure (assoc body :table_id table-id))
-    (let [measure (api/check-500
+    (let [user-id api/*current-user-id*
+          measure (api/check-500
                    (first (t2/insert-returning-instances! :model/Measure
-                                                          :creator_id  api/*current-user-id*
+                                                          :creator_id  user-id
                                                           :name        name
                                                           :description description
                                                           :definition  normalized-definition)))]
-      (events/publish-event! :event/measure-create {:object measure :user-id api/*current-user-id*})
+      (mdb/do-after-commit
+       #(events/publish-event! :event/measure-create {:object measure :user-id user-id}))
       (t2/hydrate measure :creator))))

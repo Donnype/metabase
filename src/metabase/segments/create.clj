@@ -2,6 +2,7 @@
   "Segment creation shared by REST and domain workflows."
   (:require
    [metabase.api.common :as api]
+   [metabase.app-db.core :as mdb]
    [metabase.events.core :as events]
    [metabase.lib-be.core :as lib-be]
    [metabase.lib.core :as lib]
@@ -28,12 +29,14 @@
   [{:keys [name description definition], :as body}]
   (let [table-id (definition-table-id definition)]
     (api/create-check :model/Segment (assoc body :table_id table-id))
-    (let [segment (api/check-500
+    (let [user-id api/*current-user-id*
+          segment (api/check-500
                    (first (t2/insert-returning-instances! :model/Segment
                                                           :table_id    table-id
-                                                          :creator_id  api/*current-user-id*
+                                                          :creator_id  user-id
                                                           :name        name
                                                           :description description
                                                           :definition  definition)))]
-      (events/publish-event! :event/segment-create {:object segment :user-id api/*current-user-id*})
+      (mdb/do-after-commit
+       #(events/publish-event! :event/segment-create {:object segment :user-id user-id}))
       (t2/hydrate segment :creator))))
