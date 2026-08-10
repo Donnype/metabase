@@ -3,13 +3,20 @@ import { Route } from "metabase/router";
 import { NewPythonTransformPage } from "metabase/transforms/pages/NewTransformPage";
 import { TransformListPage } from "metabase/transforms/pages/TransformListPage";
 
-import { PythonLibraryEditorPage } from "./pages/PythonLibraryEditorPage";
 import { PythonTransformsUpsellModal } from "./upsells/PythonTransformsUpsellModal";
+
+// Only the library editor is deferred. The other two pages come from
+// `metabase/transforms`, which the core transform routes already import, so
+// naming them in an `import()` here would move nothing.
+const pythonLibraryEditorPage = () =>
+  import("./pages/PythonLibraryEditorPage").then(
+    ({ PythonLibraryEditorPage }) => ({ Component: PythonLibraryEditorPage }),
+  );
 
 export function getPythonTransformsRoutes() {
   return (
     <>
-      <Route path="library/:path" element={<PythonLibraryEditorPage />} />
+      <Route path="library/:path" lazy={pythonLibraryEditorPage} />
       <Route path="new/python" element={<NewPythonTransformPage />} />
     </>
   );
