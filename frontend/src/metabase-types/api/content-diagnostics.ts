@@ -101,6 +101,7 @@ export type ContentDiagnosticsImbalancedSortColumn =
 export type ContentDiagnosticsStaleUserParams = {
   entity_types?: ContentDiagnosticsNonCollectionFilterType[];
   include_personal_collections?: boolean;
+  threshold_days?: number;
   sort_column?: ContentDiagnosticsStaleSortColumn;
   sort_direction?: SortDirection;
 };
@@ -166,6 +167,7 @@ export type ListStaleFindingsRequest = {
   query?: string;
   "entity-types"?: ContentDiagnosticsNonCollectionFilterType[];
   "include-personal-collections"?: boolean;
+  "threshold-days"?: number;
   "sort-column"?: ContentDiagnosticsStaleSortColumn;
   "sort-direction"?: SortDirection;
 } & PaginationRequest;
