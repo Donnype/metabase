@@ -12,13 +12,18 @@
 (set! *warn-on-reflection* true)
 
 (defn normalize-input-definition
-  "Normalize a Measure definition from API input to MBQL5."
+  "Normalize a Measure definition from API input to MBQL5.
+  Accepts MBQL4 definitions for Cypress e2e test support:
+  - MBQL5 full queries (passed through)
+  - MBQL4 full queries (converted to MBQL5)
+  - MBQL4 fragments (wrapped in full query, then converted to MBQL5); the fragment must
+    include `:source-table` so the table can be derived"
   [definition]
   (if (seq definition)
     (-> (case (lib/normalized-mbql-version definition)
           (:mbql-version/mbql5 :mbql-version/legacy)
           definition
-
+          ;; default: MBQL4 fragment - wrap it in a full query
           (let [table-id    (:source-table definition)
                 _           (api/check-400 (pos-int? table-id)
                                            (tru "Measure definition must specify a source table."))
@@ -30,7 +35,7 @@
     {}))
 
 (defn definition-table-id
-  "Derive the source table ID from a normalized Measure definition."
+  "Derive the source table ID from a normalized Measure definition, or throw a 400 if it has none."
   [normalized-definition]
   (api/check-400 (when (seq normalized-definition)
                    (lib/primary-source-table-id normalized-definition))
