@@ -250,18 +250,22 @@
     (setting/set! :llm-metabot-provider model-ref)))
 
 (defn- follow-edited-connection-model!
-  "Keep `llm-metabot-provider` on the model an edited connection actually serves.
+  "Keep the model-reference settings on the model an edited connection actually serves.
 
   A model reference stores the model as a string rather than as a live lookup, so for a type whose model comes from
   its own config — Azure, whose reference bakes in `{family}/{deployment-name}` — editing the connection can leave
-  the selection naming a deployment that no longer exists. The connection still reports usable, and the next
-  request fails at the provider. Types whose model is chosen independently of their credentials are left alone."
+  a selection naming a deployment that no longer exists. The connection still reports usable, and the next request
+  fails at the provider. The Metabot selection and an explicitly pinned mini model both move; a derived mini model
+  needs no help, since it follows the Metabot selection on its own. Types whose model is chosen independently of
+  their credentials are left alone."
   [{conn-key :key :keys [type config] :as conn}]
-  (when (and (llm.provider/connection-model type (llm.provider/with-field-defaults type config))
-             (= conn-key (llm.provider/model-ref->connection-key (metabot.settings/llm-metabot-provider))))
+  (when (llm.provider/connection-model type (llm.provider/with-field-defaults type config))
     (let [model-ref (connection-model-ref conn)]
-      (when-not (= model-ref (metabot.settings/llm-metabot-provider))
-        (setting/set! :llm-metabot-provider model-ref)))))
+      (doseq [[selected setting-key] [[(metabot.settings/llm-metabot-provider) :llm-metabot-provider]
+                                      [(metabot.settings/explicit-mini-model) :llm-mini-model]]]
+        (when (and (= conn-key (llm.provider/model-ref->connection-key selected))
+                   (not= model-ref selected))
+          (setting/set! setting-key model-ref))))))
 
 ;;; -------------------------------------------------- Endpoints ---------------------------------------------------
 
