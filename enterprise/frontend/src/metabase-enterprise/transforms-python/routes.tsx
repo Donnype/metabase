@@ -1,16 +1,26 @@
 import { modalRoute } from "metabase/common/components/ModalRoute";
 import { Route } from "metabase/router";
-import { NewPythonTransformPage } from "metabase/transforms/pages/NewTransformPage";
 import { TransformListPage } from "metabase/transforms/pages/TransformListPage";
 
-import { PythonLibraryEditorPage } from "./pages/PythonLibraryEditorPage";
 import { PythonTransformsUpsellModal } from "./upsells/PythonTransformsUpsellModal";
+
+// Both pages render the Python editor, which pulls in CodeMirror's Python
+// language mode. This plugin registers eagerly, so they load on demand.
+const pythonLibraryEditorPage = () =>
+  import("./pages/PythonLibraryEditorPage").then(
+    ({ PythonLibraryEditorPage }) => ({ Component: PythonLibraryEditorPage }),
+  );
+
+const newPythonTransformPage = () =>
+  import("metabase/transforms/pages/NewTransformPage").then(
+    ({ NewPythonTransformPage }) => ({ Component: NewPythonTransformPage }),
+  );
 
 export function getPythonTransformsRoutes() {
   return (
     <>
-      <Route path="library/:path" element={<PythonLibraryEditorPage />} />
-      <Route path="new/python" element={<NewPythonTransformPage />} />
+      <Route path="library/:path" lazy={pythonLibraryEditorPage} />
+      <Route path="new/python" lazy={newPythonTransformPage} />
     </>
   );
 }

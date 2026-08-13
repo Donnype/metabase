@@ -3,14 +3,26 @@ import { Route } from "metabase/router";
 
 import { ArchivedSnippetsPage } from "./pages/ArchivedSnippetsPage";
 import { SnippetDependenciesPage } from "./pages/SnippetDependenciesPage";
-import { EditSnippetPage, NewSnippetPage } from "./pages/lazy";
+
+// Both snippet pages render a CodeMirror editor. They sit behind an enterprise
+// plugin that registers eagerly, so without their own chunk every EE page load
+// pays for the editor.
+const newSnippetPage = () =>
+  import("./pages/NewSnippetPage").then(({ NewSnippetPage }) => ({
+    Component: NewSnippetPage,
+  }));
+
+const editSnippetPage = () =>
+  import("./pages/EditSnippetPage").then(({ EditSnippetPage }) => ({
+    Component: EditSnippetPage,
+  }));
 
 export function getDataStudioSnippetRoutes() {
   return (
     <>
-      <Route path="snippets/new" element={<NewSnippetPage />} />
+      <Route path="snippets/new" lazy={newSnippetPage} />
       <Route path="snippets/archived" element={<ArchivedSnippetsPage />} />
-      <Route path="snippets/:snippetId" element={<EditSnippetPage />} />
+      <Route path="snippets/:snippetId" lazy={editSnippetPage} />
       {PLUGIN_DEPENDENCIES.isEnabled && (
         <Route
           path="snippets/:snippetId/dependencies"
