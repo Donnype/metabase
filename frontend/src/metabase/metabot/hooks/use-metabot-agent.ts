@@ -15,13 +15,13 @@ import {
   cancelInflightAgentRequests,
   getActiveToolCalls,
   getDebugMode,
-  getIsLongMetabotConversation,
   getIsProcessing,
   getMessages,
   getMetabotConversationForkedFrom,
   getMetabotConversationId,
   getMetabotConversationTitle,
   getMetabotId,
+  getMetabotLongChatNotice,
   getMetabotReactionsState,
   getMetabotRequestId,
   getMetabotVisible,
@@ -50,6 +50,10 @@ export const useMetabotAgent = (agentId: MetabotAgentId = "omnibot") => {
     getMetabotRequestId(state, agentId),
   );
   const visible = useSelector((state) => getMetabotVisible(state, agentId));
+  const longChatNotice = useSelector((state) =>
+    getMetabotLongChatNotice(state, agentId),
+  );
+  const isContextWindowFull = longChatNotice === "full";
 
   const setVisible = useCallback(
     (visible: boolean) => dispatch(setVisibleAction({ agentId, visible })),
@@ -82,6 +86,10 @@ export const useMetabotAgent = (agentId: MetabotAgentId = "omnibot") => {
         focusInput?: boolean;
       },
     ) => {
+      if (isContextWindowFull) {
+        return;
+      }
+
       setPrompt("");
 
       if (!visible && !options?.preventOpenSidebar) {
@@ -124,6 +132,7 @@ export const useMetabotAgent = (agentId: MetabotAgentId = "omnibot") => {
       promptInputRef,
       setPrompt,
       isTransformsPage,
+      isContextWindowFull,
     ],
   );
 
@@ -193,9 +202,8 @@ export const useMetabotAgent = (agentId: MetabotAgentId = "omnibot") => {
     ),
     messages: useSelector((state) => getMessages(state, agentId)),
     isDoingScience: useSelector((state) => getIsProcessing(state, agentId)),
-    isLongConversation: useSelector((state) =>
-      getIsLongMetabotConversation(state, agentId),
-    ),
+    longChatNotice,
+    isContextWindowFull,
     activeToolCalls: useSelector((state) => getActiveToolCalls(state, agentId)),
     debugMode: useSelector(getDebugMode),
     reactions: useSelector(getMetabotReactionsState),

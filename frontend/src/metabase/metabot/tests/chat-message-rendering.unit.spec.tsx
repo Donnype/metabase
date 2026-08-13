@@ -361,7 +361,7 @@ describe("AgentMessage", () => {
   describe("turn_incomplete", () => {
     const incompleteMessage = (
       finishReason: MetabotAgentTurnIncompleteMessage["finishReason"],
-    ): MetabotAgentChatMessage => ({
+    ): MetabotAgentTurnIncompleteMessage => ({
       id: "msg",
       role: "agent",
       type: "turn_incomplete",
@@ -377,6 +377,18 @@ describe("AgentMessage", () => {
       ).toBeInTheDocument();
       await userEvent.click(await continueResponseButton());
       expect(onContinue).toHaveBeenCalled();
+    });
+
+    it("shows a terminal notice when the context window is full", () => {
+      setup(
+        { ...incompleteMessage("length"), contextWindowFull: true },
+        { onContinue: jest.fn() },
+      );
+
+      expect(
+        screen.getByText(/reached its maximum length and can't continue/),
+      ).toBeInTheDocument();
+      expect(queryContinueResponseButton()).not.toBeInTheDocument();
     });
 
     it("explains a content-filtered response without offering to continue", () => {

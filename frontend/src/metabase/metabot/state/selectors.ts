@@ -8,8 +8,9 @@ import * as Urls from "metabase/urls";
 import type { TransformId } from "metabase-types/api";
 
 import {
+  CONTEXT_WINDOW_FULL_RATIO,
+  CONTEXT_WINDOW_WARNING_RATIO,
   FIXED_METABOT_IDS,
-  LONG_CONVO_MSG_LENGTH_THRESHOLD,
   METABOT_REQUEST_IDS,
   type MetabotProfileId,
 } from "../constants";
@@ -256,13 +257,20 @@ export const getConversationChart = createSelector(
   },
 );
 
-export const getIsLongMetabotConversation = createSelector(
-  getMessages,
-  (messages) => {
-    const totalMessageLength = messages.reduce((sum, msg) => {
-      return sum + ("message" in msg ? msg.message.length : 0);
-    }, 0);
-    return totalMessageLength >= LONG_CONVO_MSG_LENGTH_THRESHOLD;
+export type MetabotLongChatNoticeVariant = "warning" | "full";
+
+export const getMetabotLongChatNotice = createSelector(
+  [getMetabotConversation],
+  (convo): MetabotLongChatNoticeVariant | undefined => {
+    const usage = convo.lastTokenUsage;
+    if (!usage) {
+      return undefined;
+    }
+    const ratio = usage.contextTokens / usage.contextWindowTokens;
+    if (ratio >= CONTEXT_WINDOW_FULL_RATIO) {
+      return "full";
+    }
+    return ratio >= CONTEXT_WINDOW_WARNING_RATIO ? "warning" : undefined;
   },
 );
 

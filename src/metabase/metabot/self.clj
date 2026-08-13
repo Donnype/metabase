@@ -60,6 +60,34 @@
     (throw (ex-info (str "Unknown LLM provider: " provider)
                     {:provider provider}))))
 
+(defn- resolve-context-window-fn [provider]
+  ;; a `case` inside of function instead of a map so that with-redefs work well
+  (case provider
+    "anthropic"  claude/context-window-tokens
+    "azure"      azure/context-window-tokens
+    "bedrock"    bedrock/context-window-tokens
+    "mistral"    mistral/context-window-tokens
+    "moonshot"   moonshot/context-window-tokens
+    "openai"     openai/context-window-tokens
+    "openrouter" openrouter/context-window-tokens
+    "zai"        zai/context-window-tokens
+    nil))
+
+(def ^:private default-context-window-tokens
+  "Conservative input context window for models no adapter has an entry for."
+  128000)
+
+(defn context-window-tokens
+  "Best-known input context window (tokens) for a full `provider/model` string
+  (`metabase/` proxy prefix allowed). Unknown providers and models fall back to
+  a conservative default rather than throwing."
+  [provider-and-model]
+  (let [provider  (provider-util/provider-and-model->provider provider-and-model)
+        model     (provider-util/provider-and-model->model provider-and-model)
+        window-fn (resolve-context-window-fn provider)]
+    (or (when window-fn (window-fn model))
+        default-context-window-tokens)))
+
 (defn- parse-provider-model [s]
   (let [provider (provider-util/provider-and-model->provider s)]
     {:provider   provider

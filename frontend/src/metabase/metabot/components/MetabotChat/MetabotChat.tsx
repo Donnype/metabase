@@ -6,7 +6,7 @@ import { t } from "ttag";
 import EmptyDashboardBot from "assets/img/dashboard-empty.svg?component";
 import { AIProviderConfigurationModal } from "metabase/metabot/components/AIProviderConfigurationModal";
 import { AIProviderConfigurationNotice } from "metabase/metabot/components/AIProviderConfigurationNotice";
-import { MetabotResetLongChatButton } from "metabase/metabot/components/MetabotChat/MetabotResetLongChatButton";
+import { MetabotLongChatNotice } from "metabase/metabot/components/MetabotChat/MetabotLongChatNotice";
 import { useSetting } from "metabase/settings";
 import { Box, Button, Flex, Paper, Stack, Text } from "metabase/ui";
 
@@ -78,7 +78,6 @@ export const MetabotChat = ({
     : t`New conversation`;
   const title = hasMessages ? metabot.title || untitledLabel : undefined;
 
-  const handleEditorSubmit = () => metabot.submitInput(metabot.prompt);
   const shouldShowHeader = headerActions || title;
 
   return (
@@ -192,12 +191,6 @@ export const MetabotChat = ({
               />
               {/* filler - height gets set via ref mutation */}
               <div ref={fillerRef} data-testid="metabot-message-filler" />
-              {/* long convo warning */}
-              {metabot.isLongConversation && (
-                <MetabotResetLongChatButton
-                  onResetConversation={metabot.createNewConversation}
-                />
-              )}
             </Box>
           )}
         </Box>
@@ -205,6 +198,13 @@ export const MetabotChat = ({
 
       {isConfigured && (
         <Box className={Styles.textInputContainer}>
+          {metabot.longChatNotice && (
+            <MetabotLongChatNotice
+              className={Styles.longChatNotice}
+              variant={metabot.longChatNotice}
+              onNewChat={metabot.createNewConversation}
+            />
+          )}
           <Paper
             className={cx(
               Styles.inputContainer,
@@ -215,10 +215,15 @@ export const MetabotChat = ({
               ref={metabot.promptInputRef}
               value={metabot.prompt}
               autoFocus
+              disabled={metabot.isContextWindowFull}
               isResponding={metabot.isDoingScience}
-              placeholder={t`How can I help? Type @ to mention items.`}
+              placeholder={
+                metabot.isContextWindowFull
+                  ? t`Start a new chat to continue`
+                  : t`How can I help? Type @ to mention items.`
+              }
               onChange={metabot.setPrompt}
-              onSubmit={handleEditorSubmit}
+              onSubmit={() => metabot.submitInput(metabot.prompt)}
               onStop={metabot.cancelRequest}
               suggestionConfig={{
                 suggestionModels: config.suggestionModels,

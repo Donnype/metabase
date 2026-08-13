@@ -276,6 +276,7 @@ export const AgentMessage = ({
         .with({ type: "turn_incomplete" }, (m) => (
           <IncompleteTurnAlert
             finishReason={m.finishReason}
+            contextWindowFull={m.contextWindowFull}
             onContinue={onContinue}
           />
         ))
@@ -490,17 +491,26 @@ const AbortedTurnAlert = ({
 
 const IncompleteTurnAlert = ({
   finishReason,
+  contextWindowFull,
   onContinue,
 }: {
   finishReason: MetabotAgentTurnIncompleteMessage["finishReason"];
+  contextWindowFull?: boolean;
   onContinue?: () => void;
 }) => {
   const metabotName = useSetting("metabot-name");
   const { message, continuable } = match(finishReason)
-    .with("length", () => ({
-      message: t`Response from ${metabotName} was cut off because it hit the maximum length`,
-      continuable: true,
-    }))
+    .with("length", () =>
+      contextWindowFull
+        ? {
+            message: t`This conversation has reached its maximum length and can't continue. Please start a new chat.`,
+            continuable: false,
+          }
+        : {
+            message: t`Response from ${metabotName} was cut off because it hit the maximum length`,
+            continuable: true,
+          },
+    )
     .with("content-filter", () => ({
       message: t`Response from ${metabotName} was stopped by a content filter. Try rephrasing your question.`,
       continuable: false,
