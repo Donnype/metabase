@@ -23,6 +23,9 @@ const {
 const {
   OPTIMIZATION_CONFIG,
 } = require("./frontend/build/embedding-sdk/rspack/shared");
+const {
+  CODEMIRROR_CACHE_GROUP,
+} = require("./frontend/build/shared/rspack/codemirror-chunk");
 const { BABEL_CONFIG } = require("./frontend/build/shared/rspack/babel-config");
 const { CSS_CONFIG } = require("./frontend/build/shared/rspack/css-config");
 const {
@@ -225,6 +228,7 @@ const config = {
       maxSize: 5_000_000,
       minSize: 100_000,
       cacheGroups: {
+        codemirror: CODEMIRROR_CACHE_GROUP,
         vendors: {
           test: /[\\/]node_modules[\\/]/,
           // Use a fixed name prefix so rspack merges vendors into a few chunks
