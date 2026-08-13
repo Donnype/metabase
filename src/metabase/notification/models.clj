@@ -410,10 +410,8 @@
 (t2/deftransforms :model/NotificationCard
   {:send_condition (mi/transform-validator mi/transform-keyword (partial mi/assert-enum card-subscription-send-conditions))})
 
-(mr/def ::NotificationCard
-  "Schema for :model/NotificationCard."
-  [:map
-   [:card_id                          ms/PositiveInt]
+(def ^:private notification-card-entries
+  [[:card_id                          ms/PositiveInt]
    ;; nil on an unsaved notification, e.g. the one POST /api/pulse/test builds to send a test alert
    [:id              {:optional true} [:maybe ms/PositiveInt]]
    [:notification_id {:optional true} [:maybe ms/PositiveInt]]
@@ -422,11 +420,58 @@
    [:send_condition  {:optional true} (ms/enum-decode-keyword card-subscription-send-conditions)]
    [:send_once       {:optional true} :boolean]])
 
+(mr/def ::NotificationCard
+  "Schema for :model/NotificationCard."
+  (into [:map] notification-card-entries))
+
 (t2/define-before-insert :model/NotificationCard
   [instance]
   (merge {:send_condition :has_result
           :send_once      false}
          instance))
+
+;; ------------------------------------------------------------------------------------------------;;
+;;                                          Update Spec                                            ;;
+;; ------------------------------------------------------------------------------------------------;;
+
+(models.u.spec-update/define-spec notification-update-spec
+  "Spec for updating a notification."
+  {:model        :model/Notification
+   ;; `:creator_id` is here so PUT can flow ownership reassignment through the same spec write as
+   ;; the rest of the row. Authorization lives in the model's `before-update` hook (superuser-only).
+   :compare-cols [:active :creator_id]
+   :extra-cols   [:payload_type :internal_id :payload_id]
+   :nested-specs {:payload       {:model        :model/NotificationCard
+                                  :compare-cols [:send_condition :send_once]
+                                  :extra-cols   [:card_id]}
+                  :subscriptions {:model        :model/NotificationSubscription
+                                  :fk-column    :notification_id
+                                  :compare-cols [:notification_id :type :event_name :cron_schedule :ui_display_type]
+                                  :multi-row?   true}
+                  :handlers      {:model        :model/NotificationHandler
+                                  :fk-column    :notification_id
+                                  :compare-cols [:notification_id :channel_type :channel_id :template_id :active]
+                                  :multi-row?   true
+                                  :nested-specs {:recipients {:model        :model/NotificationRecipient
+                                                              :fk-column    :notification_handler_id
+                                                              :compare-cols [:notification_handler_id :type :user_id :permissions_group_id :details]
+                                                              :multi-row?   true}
+                                                 :template   {:model         :model/ChannelTemplate
+                                                              :ref-in-parent :template_id
+                                                              :compare-cols  [:channel_type :name :details]}}}}})
+
+(defn- update-input-entries
+  "Entries from `entries` whose key `spec` uses on update."
+  [entries {:keys [compare-cols extra-cols nested-specs multi-row? id-col]}]
+  (let [allowed (into (set (concat compare-cols extra-cols (keys nested-specs)))
+                      ;; multi-row rows are matched by their body-supplied id, so keep the id entry
+                      (when multi-row? [id-col]))]
+    (filterv (comp allowed first) entries)))
+
+(mr/def ::NotificationCardUpdate
+  "::NotificationCard restricted to what the update spec writes - `:id` comes from the URL's notification."
+  (into [:map] (update-input-entries notification-card-entries
+                                     (get-in notification-update-spec [:nested-specs :payload]))))
 
 ;; ------------------------------------------------------------------------------------------------;;
 ;;                                            Helpers                                              ;;
@@ -516,19 +561,21 @@
 (defn hydrated-notification-schema
   "Schema for a notification hydrated with its creator, subscriptions and handlers, where each handler matches
   `handler-schema`. Callers supply the handler schema because API input accepts a narrower set of templates than what
-  we hand back out."
-  [handler-schema]
+  we hand back out. `:update-input? true` keeps only the entries `notification-update-spec` uses."
+  [handler-schema & {:keys [update-input?]}]
   (let [entries (into notification-entries
-                      [;; the hydrated User, echoed back by clients on update; `:creator_id` is what gets read
+                      [;; the hydrated User, echoed back by clients; `:creator_id` is what gets read
                        [:creator       {:optional true} [:maybe ms/Map]]
                        [:creator_id    {:optional true} [:maybe int?]]
                        [:payload_id    {:optional true} [:maybe int?]]
                        [:subscriptions {:optional true} [:sequential [:ref ::NotificationSubscription]]]
-                       [:handlers      {:optional true} [:sequential handler-schema]]])]
+                       [:handlers      {:optional true} [:sequential handler-schema]]])
+        entries (cond-> entries
+                  update-input? (update-input-entries notification-update-spec))]
     (mu/dispatched-map
      (comp keyword :payload_type)
      entries
-     [[:notification/card [[:payload [:ref ::NotificationCard]]]]
+     [[:notification/card [[:payload [:ref (if update-input? ::NotificationCardUpdate ::NotificationCard)]]]]
       [::mc/default       []]])))
 
 (mr/def ::FullyHydratedNotification
@@ -604,32 +651,6 @@
               handler-id (t2/insert-returning-pk! :model/NotificationHandler handler)]
           (t2/insert! :model/NotificationRecipient (map #(assoc % :notification_handler_id handler-id) recipients))))
       instance)))
-
-(models.u.spec-update/define-spec notification-update-spec
-  "Spec for updating a notification."
-  {:model        :model/Notification
-   ;; `:creator_id` is here so PUT can flow ownership reassignment through the same spec write as
-   ;; the rest of the row. Authorization lives in the model's `before-update` hook (superuser-only).
-   :compare-cols [:active :creator_id]
-   :extra-cols   [:payload_type :internal_id :payload_id]
-   :nested-specs {:payload       {:model        :model/NotificationCard
-                                  :compare-cols [:send_condition :send_once]
-                                  :extra-cols   [:card_id]}
-                  :subscriptions {:model        :model/NotificationSubscription
-                                  :fk-column    :notification_id
-                                  :compare-cols [:notification_id :type :event_name :cron_schedule :ui_display_type]
-                                  :multi-row?   true}
-                  :handlers      {:model        :model/NotificationHandler
-                                  :fk-column    :notification_id
-                                  :compare-cols [:notification_id :channel_type :channel_id :template_id :active]
-                                  :multi-row?   true
-                                  :nested-specs {:recipients {:model        :model/NotificationRecipient
-                                                              :fk-column    :notification_handler_id
-                                                              :compare-cols [:notification_handler_id :type :user_id :permissions_group_id :details]
-                                                              :multi-row?   true}
-                                                 :template   {:model         :model/ChannelTemplate
-                                                              :ref-in-parent :template_id
-                                                              :compare-cols  [:channel_type :name :details]}}}}})
 
 (defn update-notification!
   "Update an existing notification with `new-notification`."
