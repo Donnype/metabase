@@ -50,8 +50,8 @@ import {
 } from "../HandleEditorDrop/utils";
 import { createIdAttribute, createProseMirrorPlugin } from "../NodeIds";
 import CS from "../extensions.module.css";
-import { NativeQueryModal } from "../shared/NativeQueryModal";
 import { useDndHelpers } from "../shared/dnd/use-dnd-helpers";
+import { NativeQueryModal } from "../shared/lazyNativeQueryModal";
 
 import { CardEmbedLoadingState } from "./CardEmbedLoadingState";
 import { CardEmbedMenuDropdown } from "./CardEmbedMenuDropdown";

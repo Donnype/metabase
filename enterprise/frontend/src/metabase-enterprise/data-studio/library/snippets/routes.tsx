@@ -2,9 +2,8 @@ import { PLUGIN_DEPENDENCIES } from "metabase/plugins";
 import { Route } from "metabase/router";
 
 import { ArchivedSnippetsPage } from "./pages/ArchivedSnippetsPage";
-import { EditSnippetPage } from "./pages/EditSnippetPage";
-import { NewSnippetPage } from "./pages/NewSnippetPage";
 import { SnippetDependenciesPage } from "./pages/SnippetDependenciesPage";
+import { EditSnippetPage, NewSnippetPage } from "./pages/lazy";
 
 export function getDataStudioSnippetRoutes() {
   return (
