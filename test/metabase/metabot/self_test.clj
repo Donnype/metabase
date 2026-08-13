@@ -623,7 +623,26 @@
     (is (=? {:type "finish" :finishReason "error"}
             (last (sse-events [{:type :error :error {:message "tool blew up mid-turn"}}
                                {:type :usage :model "m" :usage {:promptTokens 1 :completionTokens 2 :totalTokens 3}
-                                :finish-reason "content-filter" :raw-finish-reason "refusal"}]))))))
+                                :finish-reason "content-filter" :raw-finish-reason "refusal"}])))))
+  (testing "a loop stopped at max iterations emits finishReason \"tool-calls\""
+    (is (=? {:type "finish" :finishReason "tool-calls"}
+            (last (sse-events [{:type :usage :model "m" :usage {:promptTokens 1 :completionTokens 2 :totalTokens 3}
+                                :finish-reason "tool-calls" :raw-finish-reason "tool_use"}
+                               {:type :finish :finish-reason :max-iterations}])))))
+  (testing "a terminal-tool stop stays \"stop\" even though the provider reported \"tool-calls\""
+    (is (=? {:type "finish" :finishReason "stop"}
+            (last (sse-events [{:type :usage :model "m" :usage {:promptTokens 1 :completionTokens 2 :totalTokens 3}
+                                :finish-reason "tool-calls" :raw-finish-reason "tool_use"}
+                               {:type :finish :finish-reason :terminal-tool}])))))
+  (testing "an in-turn error part outranks a max-iterations stop"
+    (is (=? {:type "finish" :finishReason "error"}
+            (last (sse-events [{:type :error :error {:message "tool blew up mid-turn"}}
+                               {:type :finish :finish-reason :max-iterations}])))))
+  (testing "a length finish outranks a max-iterations stop"
+    (is (=? {:type "finish" :finishReason "length"}
+            (last (sse-events [{:type :usage :model "m" :usage {:promptTokens 1 :completionTokens 2 :totalTokens 3}
+                                :finish-reason "length" :raw-finish-reason "max_tokens"}
+                               {:type :finish :finish-reason :max-iterations}]))))))
 
 (deftest parts->aisdk-sse-xf-lifecycle-test
   (testing "first :start opens the message and a step; later :start is a step boundary; completion closes"

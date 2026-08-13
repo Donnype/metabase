@@ -10,6 +10,7 @@
    [metabase.lib.test-metadata :as meta]
    [metabase.metabot.agent.core :as agent]
    [metabase.metabot.agent.memory :as memory]
+   [metabase.metabot.agent.profiles :as profiles]
    [metabase.metabot.persistence :as metabot.persistence]
    [metabase.metabot.self :as self]
    [metabase.metabot.self.openrouter :as openrouter]
@@ -117,10 +118,11 @@
                                   :profile-id :embedding_next
                                   :context    {}}))]
             ;; Should get parts + state data
-            ;; Note: :finish is not emitted as a part; it's handled by aisdk-line-xf completion
             (is (pos? (count result)))
-            ;; Should have state data (final part)
-            (is (some #(= :data (:type %)) result)))))
+            ;; Should have state data
+            (is (some #(= :data (:type %)) result))
+            ;; Loop's stop classification closes the stream
+            (is (= {:type :finish :finish-reason :stop} (last result))))))
       (testing "sql profile requests required tool choice"
         (let [captured (atom nil)]
           (mt/with-dynamic-fn-redefs [self/call-llm (fn [_model _system _parts _tools _tracking-opts llm-opts]
@@ -194,6 +196,28 @@
             ;; Should get error message
             (is (some #(= :error (:type %)) result))))))))
 
+(deftest max-iterations-finish-reason-test
+  (mt/as-admin
+    (mt/with-temporary-setting-values [llm-metabot-provider test-provider]
+      (let [get-profile profiles/get-profile
+            call-count (atom 0)]
+        (mt/with-dynamic-fn-redefs [profiles/get-profile  (comp #(assoc % :max-iterations 2) get-profile)
+                                    openrouter/openrouter (fn [_]
+                                                            (mut/mock-llm-response
+                                                             [{:type      :tool-input
+                                                               :id        (str "t" (swap! call-count inc))
+                                                               :function  "search"
+                                                               :arguments {}}]))
+                                    metabot-search/search (constantly [])]
+          (let [finish (mt/with-log-level [metabase.metabot.agent.core :warn]
+                         (->> (agent/run-agent-loop {:messages [{:role :user :content "Hi"}]
+                                                     :profile-id :embedding_next})
+                              (into [])
+                              last))]
+            (is (= 2 @call-count)
+                "stops calling the LLM once the iteration cap is reached")
+            (is (= {:type :finish :finish-reason :max-iterations} finish))))))))
+
 ;; Note: build-messages-for-llm is now internal to call-llm
 ;; Message building is tested via messages_test.clj
 
@@ -236,7 +260,7 @@
             (is (pos? (count result)))
             ;; Should have text part
             (is (some #(= :text (:type %)) result))
-            ;; Should have state data part (finish is handled by aisdk-line-xf, not emitted as part)
+            ;; Should have state data part
             (is (some #(and (= :data (:type %))
                             (map? (:data %)))
                       result))))))))
@@ -412,7 +436,8 @@
                          {:type      :data
                           :data-type "state"
                           :data      {:queries map?
-                                      :charts  map?}}]
+                                      :charts  map?}}
+                         {:type :finish :finish-reason :stop}]
                         (mt/with-log-level [metabase.metabot.agent.core :warn]
                           (into [] (metabot.persistence/combine-text-parts-xf)
                                 (agent/run-agent-loop
@@ -584,7 +609,8 @@
                                                                 (mut/mock-llm-response
                                                                  [{:type :text :text "Hello after retry"}])))]
             (is (=? [{:type :text :text "Hello after retry"}
-                     {:type :data :data-type "state"}]
+                     {:type :data :data-type "state"}
+                     {:type :finish :finish-reason :stop}]
                     (mt/with-log-level [metabase.metabot.self :fatal]
                       (into [] (metabot.persistence/combine-text-parts-xf)
                             (agent/run-agent-loop
