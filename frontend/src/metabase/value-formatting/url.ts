@@ -5,7 +5,11 @@ import type { ColumnSettings } from "metabase-types/api";
 import { getDataFromClicked } from "./click-data";
 import { renderLinkTextForClick, renderLinkURLForClick } from "./link";
 import { getJsxLinkRenderer } from "./registry";
-import { formatValue, getRemappedValue } from "./value";
+import {
+  type FormatValueOptions,
+  formatValue,
+  getRemappedValue,
+} from "./value";
 
 function isSafeProtocol(protocol: string) {
   return (
@@ -28,8 +32,17 @@ export function getUrlProtocol(url: string) {
   }
 }
 
-export function formatUrl(value: string, options: ColumnSettings = {}) {
-  const { jsx, rich, column, collapseNewlines } = options;
+export function formatUrl(value: string, options: FormatValueOptions = {}) {
+  const {
+    jsx,
+    rich,
+    column,
+    view_as,
+    link_text,
+    clicked,
+    collapseNewlines,
+    copyLinkUrl,
+  } = options;
 
   const url = getLinkUrl(value, options);
 
@@ -37,9 +50,13 @@ export function formatUrl(value: string, options: ColumnSettings = {}) {
   if (jsx && rich && url && jsxLinkRenderer) {
     const text = getLinkText(value, options);
     return jsxLinkRenderer(url, text);
+  } else if (url && copyLinkUrl) {
+    return url;
   } else if (!url && !isURL(column)) {
     // Even when no URL is found, return a formatted value
     return formatValue(value, { ...options, view_as: null });
+  } else if (view_as === "link" && link_text && clicked) {
+    return getLinkText(value, options);
   } else {
     return collapseNewlines ? removeNewLines(value) : value;
   }

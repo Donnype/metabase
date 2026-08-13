@@ -7,4 +7,27 @@ describe("formatUrl", () => {
   it("should return a string when not in jsx mode", () => {
     expect(formatUrl("http://metabase.com/")).toEqual("http://metabase.com/");
   });
+
+  it("should return the link_text for plain text output, matching the rendered label", () => {
+    const formatted = formatUrl("http://not.metabase.com", {
+      link_text: "metabase link",
+      link_url: "http://metabase.com",
+      view_as: "link",
+      clicked: {},
+    });
+
+    expect(formatted).toEqual("metabase link");
+  });
+
+  it("should return the link_url instead of the link_text when copyLinkUrl is set", () => {
+    const formatted = formatUrl("http://not.metabase.com", {
+      link_text: "metabase link",
+      link_url: "http://metabase.com",
+      view_as: "link",
+      clicked: {},
+      copyLinkUrl: true,
+    });
+
+    expect(formatted).toEqual("http://metabase.com");
+  });
 });
