@@ -81,9 +81,7 @@
 ;; Snowflake requires you identify an object with db-name.schema-name.table-name
 (defmethod sql.tx/qualified-name-components :snowflake
   ([driver db-name]
-   (if (some-> db-name (str/starts-with? "sha_"))
-     [db-name]
-     [(qualified-db-name (tx/get-dataset-definition (or data.impl/*dbdef-used-to-create-db* (tx/default-dataset driver))))]))
+   [(qualified-db-name (tx/get-dataset-definition (or data.impl/*dbdef-used-to-create-db* (tx/default-dataset driver))))])
   ([driver db-name table-name]
    (into (sql.tx/qualified-name-components driver db-name) ["PUBLIC" table-name]))
   ([driver db-name table-name field-name]
