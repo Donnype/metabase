@@ -221,21 +221,21 @@
         existing      (into {} (map (juxt :name identity))
                             (t2/select [:model/DataApp :name :display_name :allowed_hosts
                                         :bundle_path :bundle_hash :sync_error]))
-        {:keys [changed removed]}
+        {:keys [changed-slugs removed]}
         (t2/with-transaction [_conn]
           (when (seq present-slugs)
             (t2/update! :model/DataApp :name [:in present-slugs] :draft true {:draft false}))
-          (let [changed (reduce (fn [n {:keys [slug config-error] :as cfg}]
-                                  (cond-> n
-                                    ;; A parse failure on an app that still exists marks
-                                    ;; that row failed rather than syncing it; everything
-                                    ;; else is materialized normally.
-                                    (if config-error
-                                      (mark-config-error! (get existing slug) slug config-error)
-                                      (sync-app! (get existing slug)
-                                                 (assoc cfg :sha sha :read-file read-file)))
-                                    inc))
-                                0 results)
+          (let [changed-slugs (into #{}
+                                    (keep (fn [{:keys [slug config-error] :as cfg}]
+                                            ;; A parse failure on an app that still exists marks
+                                            ;; that row failed rather than syncing it; everything
+                                            ;; else is materialized normally.
+                                            (when (if config-error
+                                                    (mark-config-error! (get existing slug) slug config-error)
+                                                    (sync-app! (get existing slug)
+                                                               (assoc cfg :sha sha :read-file read-file)))
+                                              slug)))
+                                    results)
                 ;; `enabled` is deliberately not consulted — see the README's
                 ;; source-of-truth table. (`[:not-in #{}]` is invalid SQL, so delete-all.)
                 removed (if (seq present-slugs)
@@ -243,11 +243,16 @@
                                       :name [:not-in present-slugs]
                                       :draft false)
                           (t2/delete! :model/DataApp :draft false))]
-            {:changed changed, :removed removed}))
-        resource-changed (count (filter true? (map (comp ensure-app-resources! :slug) good)))]
+            {:changed-slugs changed-slugs, :removed removed}))
+        ;; An app whose content changed *and* whose resource provisioning newly failed
+        ;; is one changed app, so these are unioned by slug rather than summed.
+        changed (count (into changed-slugs
+                             (keep (fn [{:keys [slug]}]
+                                     (when (ensure-app-resources! slug) slug)))
+                             good))]
     (log/infof "[data-app] synced sha=%s apps=%d changed=%d removed=%d errors=%d"
-               sha (count good) (+ changed resource-changed) removed (count errors))
-    {:synced (count good), :changed (+ changed resource-changed), :removed removed, :sha sha, :config-errors errors}))
+               sha (count good) changed removed (count errors))
+    {:synced (count good), :changed changed, :removed removed, :sha sha, :config-errors errors}))
 
 (defn sync-from-snapshot!
   "Entry point for the remote-sync import pipeline. Materializes data apps from
