@@ -100,8 +100,8 @@
         (or (repr-data->llm-block exported)
             (query-edn-fallback normalized)))
       (catch Exception e
+        (log/debugf "Failed to export query for LLM: %s" (ex-message e))
         (when-not (= 403 (:status-code (ex-data e)))
-          (log/debugf "Failed to export query for LLM, using EDN fallback: %s" (ex-message e))
           (query-edn-fallback query))))
     (string? (get-in query [:native :query])) (get-in query [:native :query])
     (map? query) (query-edn-fallback query)
