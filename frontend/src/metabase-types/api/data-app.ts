@@ -15,6 +15,8 @@ export interface DataApp {
   bundle_path: string;
   /** Admin toggle. When false the app is not served. */
   enabled: boolean;
+  /** The group that grants users access to this data app. */
+  permission_group_id: number | null;
   /**
    * External origins the app's sandboxed bundle may `fetch`/XHR, from its
    * `data_app.yaml`. Empty means none (Metabase data still flows through the

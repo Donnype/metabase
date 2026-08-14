@@ -94,6 +94,7 @@ describe("ManageDataAppsPage", () => {
       expect(
         await screen.findByRole("link", { name: "Sales" }),
       ).toHaveAttribute("href", "/apps/sales");
+
       expect(screen.getByText("/apps/sales")).toBeInTheDocument();
     });
 
@@ -101,6 +102,7 @@ describe("ManageDataAppsPage", () => {
       setup({ apps: [createMockDataApp({ name: "sales", enabled: false })] });
 
       expect(await screen.findByText("Sales")).toBeInTheDocument();
+
       // A disabled app isn't reachable, so its name isn't a link.
       expect(
         screen.queryByRole("link", { name: "Sales" }),
