@@ -203,7 +203,9 @@ describe("getResultsClipboardContent", () => {
       rows: [[{ tags: ["a", "b"] }, 1]],
     });
 
-    expect(copy({ data }).text).toBe('Name\tTotal\n{"tags":["a","b"]}\t1');
+    expect(copy({ data }).text).toBe(
+      'Name\tTotal\n"{""tags"":[""a"",""b""]}"\t1',
+    );
   });
 
   it("preserves newlines like csv exports, quoting the text flavor", () => {

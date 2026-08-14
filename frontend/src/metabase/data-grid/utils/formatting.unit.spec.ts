@@ -1,4 +1,9 @@
+import { parse } from "csv-parse/browser/esm/sync";
+
 import { serializeTsv } from "./formatting";
+
+const roundTrip = (lines: string[][]) =>
+  parse(serializeTsv(lines), { delimiter: "\t" });
 
 describe("serializeTsv", () => {
   it("joins cells with tabs and lines with newlines", () => {
@@ -16,11 +21,12 @@ describe("serializeTsv", () => {
     );
   });
 
-  it("doubles quotes only inside quoted cells", () => {
-    expect(serializeTsv([['say "hi"', 'multi\n"quoted"']])).toBe(
-      'say "hi"\t"multi\n""quoted"""',
-    );
-    expect(serializeTsv([['"leading quote']])).toBe('"leading quote');
+  it("round-trips cells containing quotes", () => {
+    const lines = [
+      ['say "hi"', 'multi\n"quoted"'],
+      ['"leading quote', '{"tags":["a","b"]}'],
+    ];
+    expect(roundTrip(lines)).toEqual(lines);
   });
 
   it("keeps empty cells so the pasted shape survives", () => {

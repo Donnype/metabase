@@ -40,7 +40,7 @@ export const formatCellValueForCopy = (
   return formatter(rawValue, rowIndex, columnId);
 };
 
-const NEEDS_QUOTING_PATTERN = /[\t\n\r]/;
+const NEEDS_QUOTING_PATTERN = /[\t\n\r"]/;
 
 const needsQuoting = (text: string) => NEEDS_QUOTING_PATTERN.test(text);
 

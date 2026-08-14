@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { t } from "ttag";
 
 import { canDownloadResults } from "metabase/common/utils/dataset";
@@ -8,7 +8,11 @@ import { ActionIcon, Flex, Icon, Tooltip } from "metabase/ui";
 import type Question from "metabase-lib/v1/Question";
 import type { Dataset } from "metabase-types/api";
 
-import { getCopyMode, useCopyResults } from "./use-copy-results";
+import {
+  getCopyIneligibleReason,
+  getCopyMode,
+  useCopyResults,
+} from "./use-copy-results";
 import { useRenderedQuestion } from "./use-rendered-question";
 
 export const ViewFooterCopyWidget = () => {
@@ -29,11 +33,16 @@ interface CopyResultsButtonProps {
 const CopyResultsButton = ({ question, result }: CopyResultsButtonProps) => {
   const [copying, setCopying] = useState(false);
   const copyResults = useCopyResults({ question, result });
+  const ineligibleReason = useMemo(
+    () => getCopyIneligibleReason(question, result),
+    [question, result],
+  );
 
   const label =
-    getCopyMode(question) === "results"
+    ineligibleReason ??
+    (getCopyMode(question) === "results"
       ? t`Copy these results to clipboard`
-      : t`Copy this chart to clipboard`;
+      : t`Copy this chart to clipboard`);
 
   const handleCopy = async () => {
     setCopying(true);
@@ -53,6 +62,7 @@ const CopyResultsButton = ({ question, result }: CopyResultsButtonProps) => {
           onClick={handleCopy}
           aria-label={label}
           loading={copying}
+          disabled={ineligibleReason != null}
           variant="viewFooter"
         >
           <Icon name="clipboard" />

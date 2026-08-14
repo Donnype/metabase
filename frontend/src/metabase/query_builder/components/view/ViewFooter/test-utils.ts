@@ -132,6 +132,17 @@ export const CLASSIC_PIVOT_RESULT = createMockDataset({
   },
 });
 
+export const ALL_HIDDEN_TABLE_CARD = createMockCard({
+  display: "table",
+  dataset_query: testDatasetQuery(),
+  visualization_settings: {
+    "table.columns": [
+      { name: "NAME", enabled: false },
+      { name: "TOTAL", enabled: false },
+    ],
+  },
+});
+
 export const LINE_CARD = createMockCard({
   display: "line",
   dataset_query: testDatasetQuery(),

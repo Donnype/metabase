@@ -8,6 +8,7 @@ import { createMockDataset } from "metabase-types/api/mocks";
 
 import { ViewFooterCopyWidget } from "./ViewFooterCopyWidget";
 import {
+  ALL_HIDDEN_TABLE_CARD,
   CLASSIC_PIVOT_CARD,
   CLASSIC_PIVOT_RESULT,
   LINE_CARD,
@@ -174,25 +175,32 @@ describe("ViewFooterCopyWidget", () => {
     },
   );
 
-  it("refuses to copy a pivot the renderer rejected as truncated", async () => {
+  it("disables copy for a pivot the renderer rejected as truncated", async () => {
     const writeText = mockClipboardWriteText();
     const truncated = createMockDataset({
       data: { ...PIVOT_RESULT.data, pivot_rows_truncated: 1000 },
     });
 
-    const { store } = setup({ card: PIVOT_CARD, result: truncated });
+    setup({ card: PIVOT_CARD, result: truncated });
 
-    await userEvent.click(
-      screen.getByLabelText("Copy these results to clipboard"),
+    const button = screen.getByLabelText(
+      "This pivot table is truncated and can't be copied",
     );
+    expect(button).toBeDisabled();
+    await userEvent.click(button);
+    expect(writeText).not.toHaveBeenCalled();
+  });
 
-    await waitFor(() => {
-      expect(store.getState().undo).toContainEqual(
-        expect.objectContaining({
-          message: "Couldn't copy to the clipboard.",
-        }),
-      );
-    });
+  it("disables copy for a table with every column hidden", async () => {
+    const writeText = mockClipboardWriteText();
+
+    setup({ card: ALL_HIDDEN_TABLE_CARD, result: TABLE_RESULT });
+
+    const button = screen.getByLabelText(
+      "All columns are hidden, so there's nothing to copy",
+    );
+    expect(button).toBeDisabled();
+    await userEvent.click(button);
     expect(writeText).not.toHaveBeenCalled();
   });
 

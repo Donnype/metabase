@@ -268,7 +268,7 @@ function getPivotGrid(
 }
 
 // Pivot results interleave subtotal rows and carry the grouping column
-function flattenPivotGroupedData(data: DatasetData): DatasetData {
+export function flattenPivotGroupedData(data: DatasetData): DatasetData {
   const groupIndex = data.cols.findIndex(DataGrid.isPivotGroupColumn);
   if (groupIndex < 0) {
     return data;

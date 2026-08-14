@@ -6,12 +6,17 @@ import { useTranslateContent } from "metabase/content-translation/hooks";
 import { useDispatch, useSelector } from "metabase/redux";
 import { addUndo } from "metabase/redux/undo";
 import { getTokenFeature } from "metabase/settings";
-import { canSavePng } from "metabase/visualizations";
+import { canSavePng, extractRemappedColumns } from "metabase/visualizations";
 import { getChartSelector } from "metabase/visualizations/lib/image-exports";
-import { getResultsClipboardContent } from "metabase/visualizations/lib/results-clipboard";
+import {
+  flattenPivotGroupedData,
+  getResultsClipboardContent,
+} from "metabase/visualizations/lib/results-clipboard";
 import { getChartImageBlob } from "metabase/visualizations/lib/save-chart-image";
+import { getComputedSettingsForSeries } from "metabase/visualizations/lib/settings/visualization";
+import { getVisibleTableData } from "metabase/visualizations/lib/visible-table-data";
 import type Question from "metabase-lib/v1/Question";
-import type { Dataset } from "metabase-types/api";
+import type { Dataset, RawSeries } from "metabase-types/api";
 
 type CopyMode = "results" | "chart";
 
@@ -22,6 +27,41 @@ export const getCopyMode = (question: Question): CopyMode =>
   isGridDisplay(question) || !canSavePng(question.display())
     ? "results"
     : "chart";
+
+// The renderer refuses these same two result shapes, so the copy action must too
+export const getCopyIneligibleReason = (
+  question: Question,
+  result: Dataset,
+): string | null => {
+  if (
+    question.display() === "pivot" &&
+    result.data.pivot_rows_truncated != null
+  ) {
+    return t`This pivot table is truncated and can't be copied`;
+  }
+
+  // The pivot grid is built from multiLevelPivot, not table.columns, so this
+  // hidden-columns check (mirroring the flat-table path below) doesn't apply to it
+  if (getCopyMode(question) !== "results" || question.display() === "pivot") {
+    return null;
+  }
+
+  const card = isGridDisplay(question)
+    ? question.card()
+    : question.setDisplay("table").card();
+  const series: RawSeries = [
+    { card, data: extractRemappedColumns(result.data) },
+  ];
+  const settings = getComputedSettingsForSeries(series);
+  const flatSeries: RawSeries = [
+    { card, data: flattenPivotGroupedData(series[0].data) },
+  ];
+  const { cols } = getVisibleTableData({ series: flatSeries, settings });
+
+  return cols.length === 0
+    ? t`All columns are hidden, so there's nothing to copy`
+    : null;
+};
 
 interface UseCopyResultsParams {
   question: Question;
@@ -36,19 +76,17 @@ export const useCopyResults = ({ question, result }: UseCopyResultsParams) => {
   );
 
   return useCallback(async (): Promise<void> => {
+    const ineligibleReason = getCopyIneligibleReason(question, result);
+    if (ineligibleReason) {
+      dispatch(addUndo({ icon: "warning", message: ineligibleReason }));
+      return;
+    }
+
     try {
       if (getCopyMode(question) === "chart") {
         await copyChartImage(question, !isWhitelabeled);
         dispatch(addUndo({ message: t`Copied the chart to the clipboard` }));
         return;
-      }
-
-      // The renderer refuses a truncated pivot result, so the copy must too
-      if (
-        question.display() === "pivot" &&
-        result.data.pivot_rows_truncated != null
-      ) {
-        throw new Error("Pivot result was truncated");
       }
 
       const card = isGridDisplay(question)
