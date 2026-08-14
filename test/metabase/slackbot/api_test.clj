@@ -206,6 +206,44 @@
                 (let [msg (t2/select-one :model/MetabotMessage :channel_id channel-id :role "assistant")]
                   (is (some? (:slack_msg_id msg))))))))))))
 
+(deftest app-mention-long-answer-fits-slack-blocks-test
+  (testing "POST /events with app_mention splits a long answer so Slack accepts the blocks (BOT-1606)"
+    (tu/with-slackbot-setup
+      (let [;; 5 paragraphs of ~690 chars. The channel path concatenates every text part the
+            ;; agent loop emits, so a multi-round turn easily clears Slack's 3000 char limit.
+            mock-ai-text (str/join "\n\n" (repeat 5 (apply str (repeat 690 "x"))))
+            channel-id   "C-LONG-ANSWER-TEST"
+            event-body   (assoc-in tu/base-mention-event [:event :channel] channel-id)]
+        (tu/with-slackbot-mocks
+          {:ai-text mock-ai-text}
+          (fn [{:keys [post-calls]}]
+            (let [rejections (atom [])]
+              ;; The harness's post-message accepts anything; validate blocks like Slack does.
+              (mt/with-dynamic-fn-redefs
+                [slackbot.client/post-message (fn [_client msg]
+                                                (swap! post-calls conj msg)
+                                                (if-let [idx (tu/oversized-section-index (:blocks msg))]
+                                                  (do (swap! rejections conj idx)
+                                                      (tu/invalid-blocks-response idx))
+                                                  {:ok      true
+                                                   :ts      "1700000000.000002"
+                                                   :channel (:channel msg)}))]
+                (is (= "ok" (mt/client :post 200 "metabot/slack/events"
+                                       (tu/slack-request-options event-body)
+                                       event-body)))
+                (u/poll {:thunk      #(seq @post-calls)
+                         :done?      some?
+                         :timeout-ms 5000})
+                (testing "Slack accepts the message"
+                  (is (= [] @rejections))
+                  (is (= 1 (count @post-calls))
+                      "no fallback message was needed"))
+                (let [sections (filter #(= "section" (:type %)) (:blocks (first @post-calls)))]
+                  (testing "the answer is split across several section blocks, all within Slack's limit"
+                    (is (< 1 (count sections)))
+                    (is (every? #(<= (count (get-in % [:text :text])) tu/slack-section-text-limit)
+                                sections))))))))))))
+
 (deftest stream-start-failure-test
   (testing "When start-stream fails, falls back to a regular message"
     (tu/with-slackbot-setup

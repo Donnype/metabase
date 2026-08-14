@@ -20,14 +20,63 @@
   [prompt]
   (str prompt channel-response-style-suffix))
 
+(def ^:private section-text-limit
+  "Slack rejects a `section` block whose `text.text` exceeds 3000 characters with `invalid_blocks`."
+  3000)
+
+(def ^:private max-text-blocks
+  "Maximum number of `section` blocks to spend on the answer text. Slack caps a message at
+   50 blocks total; the rest of the budget is left for visualizations and the feedback
+   buttons."
+  20)
+
+(defn- text-chunks
+  "Split `text` into chunks of at most [[section-text-limit]] characters, preferring
+   paragraph then line boundaries so markdown structure survives. A single run longer than
+   the limit is hard cut."
+  [text]
+  (loop [remaining text
+         chunks    []]
+    (if (<= (count remaining) section-text-limit)
+      (conj chunks remaining)
+      (let [window    (subs remaining 0 section-text-limit)
+            ;; Prefer the last paragraph break, then the last line break, then a hard cut.
+            break-idx (or (str/last-index-of window "\n\n")
+                          (str/last-index-of window "\n")
+                          section-text-limit)
+            ;; A break at index 0 would make no progress; hard cut instead.
+            break-idx (if (zero? break-idx) section-text-limit break-idx)]
+        (recur (subs remaining break-idx)
+               (conj chunks (subs remaining 0 break-idx)))))))
+
+(defn- with-truncation-notice
+  "Trim `chunks` to [[max-text-blocks]], marking the last kept chunk so the dropped tail is
+   visible to the reader rather than silently lost."
+  [chunks]
+  (let [kept (vec (take max-text-blocks chunks))]
+    (if (<= (count chunks) max-text-blocks)
+      kept
+      (let [notice "\n\n_Response truncated._"
+            room   (- section-text-limit (count notice))
+            tail   (peek kept)]
+        (conj (pop kept)
+              (str (str/trimr (cond-> tail
+                                (> (count tail) room) (subs 0 room)))
+                   notice))))))
+
 (defn- final-text-blocks
-  "Build the leading text block(s) for a finalized non-streaming Slack message."
+  "Build the leading text block(s) for a finalized non-streaming Slack message.
+   Long answers are split across several `section` blocks so Slack accepts the message."
   [text]
   (if (str/blank? text)
     []
-    [{:type "section"
-      :text {:type "mrkdwn"
-             :text text}}]))
+    (into []
+          (comp (remove str/blank?)
+                (map (fn [chunk]
+                       {:type "section"
+                        :text {:type "mrkdwn"
+                               :text (str/trim chunk)}})))
+          (with-truncation-notice (text-chunks text)))))
 
 (defn- make-channel-callbacks
   "Create callback functions for channel replies.
@@ -43,6 +92,8 @@
                                                     :loading-messages [(or status "")]})
                 (catch Exception e
                   (log/warnf "[slackbot] set-status failed (channel=%s thread-ts=%s): %s" channel thread-ts (ex-message e)))))]
+      ;; Every text part from every round of the agent loop lands here, so the accumulated
+      ;; answer routinely exceeds Slack's section limit -- see `final-text-blocks`.
       {:on-text       (bound-fn* (fn [text]
                                    (when (seq text)
                                      (swap! current-text str text))))
@@ -101,7 +152,15 @@
                         (:error res)
                         (count final-blocks)
                         (pr-str (mapv :type final-blocks))
-                        (pr-str (get-in res [:response_metadata :messages]))))
+                        (pr-str (get-in res [:response_metadata :messages])))
+            ;; Slack returns `{:ok false}` rather than throwing, so without this the thread
+            ;; just goes silent. Fall back to plain text, which can't be rejected the same way.
+            (set-status! nil)
+            (let [fallback-res (slackbot.client/post-thread-reply
+                                client message-ctx
+                                "I generated a response, but Slack could not render it. Please try again.")]
+              (when-not (:ok fallback-res)
+                (log/errorf "[slackbot] channel fallback post-message failed: %s" (:error fallback-res)))))
           (doseq [e errors]
             (post-viz-error! client channel thread-ts e))))
       (catch Exception e
